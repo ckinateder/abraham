@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from pprint import pprint
 
 BASE_URL = "https://newsapi.org/v2/everything?"
-API_KEY = open("keys/newsapi_org").read().strip()
+API_KEY = open("../keys/newsapi_org").read().strip()
 
 
 class NewsAPI:
@@ -62,13 +62,14 @@ class NewsAPI:
         """
         return pd.DataFrame(cleaned_dict)
 
-    def fetch(
-        self, searchfor, from_date=(datetime.now() - timedelta(1)).strftime("%Y-%m-%d")
-    ):
+    def get_articles(self, searchfor, period="1d"):
         """
         Wrap everything to one function
         """
-        jresponse = self.fetch_json(searchfor, from_date=from_date)
+        period = (datetime.now() - timedelta(int(period.replace("d", "")))).strftime(
+            "%Y-%m-%d"
+        )
+        jresponse = self.fetch_json(searchfor, from_date=period)
         cleaned = self.clean_response(jresponse)
         cleaned_df = self.cleaned_to_df(cleaned)
         return cleaned_df

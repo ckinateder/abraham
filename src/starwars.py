@@ -4,6 +4,7 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import sent_tokenize
 from gnews import NewsParser
+from newsapi import NewsAPI
 from tqdm import tqdm
 import re
 import pandas as pd
@@ -70,9 +71,12 @@ class Darth:
     Wraps everything into getting the sentiment for a given topic
     """
 
-    def __init__(self, period="1d", splitting=False) -> None:
+    def __init__(self, period="1d", news_source="google", splitting=False) -> None:
         self.sia = Anakin()
-        self.newsparser = NewsParser()
+        if news_source == "newsapi":
+            self.newsparser = NewsAPI()
+        else:
+            self.newsparser = NewsParser()
         self.period = period  # date range back to search for
         self.splitting = splitting  # does sia.analyze use recursion to split?
 
@@ -108,11 +112,11 @@ class Darth:
         total_avg = statistics.mean([title_avg, desc_avg, text_avg])
         # classify
         if total_avg >= 0.05:
-            classified = "positive :)"
+            classified = "positive"
         elif total_avg <= -0.05:
-            classified = "negative :("
+            classified = "negative"
         else:
-            classified = "neutral :|"
+            classified = "neutral"
 
         if loud:
             print(f"Title avg: {round(title_avg*100,2)}% (compound={title_avg:.8f})")

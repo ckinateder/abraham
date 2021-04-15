@@ -105,3 +105,5 @@ print(scores)
 }
 '''
 ```
+
+`Darth` supports two news sources: [Google News]([google news](https://news.google.com/)) and [NewsAPI](https://newsapi.org/). Default is [Google News]([google news](https://news.google.com/)), but you can change it to [NewsAPI](https://newsapi.org/) by passing `Darth(news_source='newsapi')` when instantiating.
