@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 from tqdm import tqdm, trange
 from keras.utils.np_utils import to_categorical
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+#os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import tensorflow as tf
 import re
 
@@ -78,7 +78,7 @@ class Salty:
         # ### Tokenize the data and split X and y
         tokenizer = Tokenizer(num_words=self.max_features, split=" ")
         tokenizer.fit_on_texts(data["review"].values)
-        X = array(tokenizer.texts_to_sequences(data["review"].values))
+        X = tokenizer.texts_to_sequences(data["review"].values)
         X = pad_sequences(X)
         Y = pd.get_dummies(data["sentiment"]).values  # convert to indicator columns
 
