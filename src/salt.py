@@ -9,6 +9,8 @@ from keras.layers import Dense, Embedding, LSTM, SpatialDropout1D
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm, trange
 from keras.utils.np_utils import to_categorical
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import tensorflow as tf
 import re
 
@@ -77,7 +79,7 @@ class Salty:
         tokenizer = Tokenizer(num_words=self.max_features, split=" ")
         tokenizer.fit_on_texts(data["review"].values)
         X = array(tokenizer.texts_to_sequences(data["review"].values))
-
+        X = pad_sequences(X)
         Y = pd.get_dummies(data["sentiment"]).values  # convert to indicator columns
 
         test_size = 0.3  # 70/30 train/test split
@@ -117,6 +119,7 @@ class Salty:
         self.model.fit(
             X_train, Y_train, epochs=self.epochs, batch_size=self.batch_size, verbose=1
         )
+        self.model.save('models/latest-model')
         return self.model
 
     # ### Test the model

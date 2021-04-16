@@ -88,7 +88,7 @@ max_features = 2000
 tokenizer = Tokenizer(num_words=max_features, split=" ")
 tokenizer.fit_on_texts(data["review"].values)
 X = tokenizer.texts_to_sequences(data["review"].values)
-
+X = pad_sequences(X)
 Y = pd.get_dummies(data["sentiment"]).values  # convert to indicator columns
 
 test_size = 0.3  # 70/30 train/test split
