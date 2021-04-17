@@ -128,7 +128,7 @@ class Darth:
             print(f"{classified}")
         return total_avg, classified
 
-    def score_all(self, topic_results: list):
+    def score_all(self, topic_results: dict):
         # test all and build a dict
         scores = {}
         for topic in topic_results:
@@ -136,7 +136,7 @@ class Darth:
             scores[topic] = {"avg": total_avg, "nice": classified}
         return scores
 
-    def sentiment(self, topics):
+    def sentiment(self, topics: list):
         """
         Main function
         """

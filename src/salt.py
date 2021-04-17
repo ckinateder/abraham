@@ -83,7 +83,7 @@ class Salty:
 
         X = self.tokenizer.texts_to_sequences(series)
         X = pad_sequences(X)
-
+        self.padded_shape = X.shape[1]  ### so important
         return X
 
     def prepare_data(self, data):
@@ -136,7 +136,7 @@ class Salty:
         self.model.save("models/latest-model")
         self.padded_shape = X_train.shape[1]
         with open("models/latest-model/padded-shape", "w+") as f:
-            f.write(self.padded_shape)
+            f.write(str(self.padded_shape))
         return self.model
 
     def load_model(self, fname="models/latest-model"):
@@ -207,9 +207,16 @@ if __name__ == "__main__":
     imdb = pd.read_csv(path + "IMDB Dataset.csv")
     fina = pd.read_csv(path + "financial-headlines.csv")
     data = pd.concat([imdb, fina])  # combine into big
-    salty = Salty(epochs=1)
+
+    salty = Salty()
+    # train and test - takes 8 hours
     salty.bundle_train_test(data)
 
+    # evaluate
     X_train, X_test, Y_train, Y_test, X, Y = salty.prepare_data(data)
     salty.load_model()
     salty.evaluate_model(X_test, Y_test)
+
+    # try the predicting next value
+    X = salty.create_X(fina["review"].values)
+    salty.predict_next_value(X[-1])
