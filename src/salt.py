@@ -4,13 +4,14 @@ from numpy import array
 from sklearn.feature_extraction.text import CountVectorizer
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import Dense, Embedding, LSTM, SpatialDropout1D
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm, trange
 from keras.utils.np_utils import to_categorical
 import os
-#os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import tensorflow as tf
 import re
 
@@ -29,6 +30,12 @@ class Salty:
     salty.create_model(X)
     salty.fit_model(X_train, Y_train)
     salty.evaluate_model(X_test, Y_test)
+    OR
+
+    salty = Salty()
+    X_train, X_test, Y_train, Y_test, X, Y = salty.prepare_data(data)
+    salty.load_model() # from file
+    salty.evaluate_model(X_test, Y_test)
     """
 
     def __init__(
@@ -39,6 +46,9 @@ class Salty:
         self.max_features = max_features
         self.epochs = epochs
         self.batch_size = batch_size
+        self.tokenizer = Tokenizer(
+            num_words=self.max_features, split=" "
+        )  # create the tokenizer
 
     # ### Define our functions for preprocessing
     def remove_tags(self, text):
@@ -62,24 +72,28 @@ class Salty:
         sentence = re.sub(r"\s+", " ", sentence)
         return sentence
 
+    def create_X(self, data):
+        # create X from a dataframe of articles
+        data["review"] = [
+            self.preprocess_text(str(x))
+            for x in tqdm(data["review"], leave=False, desc="process")
+        ]
+        # ### Tokenize the data and split X and y
+        self.tokenizer.fit_on_texts(data["review"].values)
+
+        X = self.tokenizer.texts_to_sequences(data["review"].values)
+        X = pad_sequences(X)
+
+        return X
+
     def prepare_data(self, data):
         # Remove all neutral scores, capitalization, tags, punctuation, single characters, multiple spaces
         # takes a dataframe
 
         data = data[data["sentiment"] != "neutral"]
-        print("Data before:")
-        print(data)
-        data["review"] = [
-            self.preprocess_text(str(x))
-            for x in tqdm(data["review"], leave=False, desc="process")
-        ]
-        print("Data after:")
-        print(data)
-        # ### Tokenize the data and split X and y
-        tokenizer = Tokenizer(num_words=self.max_features, split=" ")
-        tokenizer.fit_on_texts(data["review"].values)
-        X = tokenizer.texts_to_sequences(data["review"].values)
-        X = pad_sequences(X)
+
+        X = self.create_X(data)
+
         Y = pd.get_dummies(data["sentiment"]).values  # convert to indicator columns
 
         test_size = 0.3  # 70/30 train/test split
@@ -119,7 +133,12 @@ class Salty:
         self.model.fit(
             X_train, Y_train, epochs=self.epochs, batch_size=self.batch_size, verbose=1
         )
-        self.model.save('models/latest-model')
+        self.model.save("models/latest-model")
+        return self.model
+
+    def load_model(self, fname="models/latest-model"):
+        self.model = load_model(fname)
+        self.model.summary()
         return self.model
 
     # ### Test the model
@@ -164,6 +183,13 @@ class Salty:
             "negative accuracy": neg_acc,
         }
 
+    def bundle_train_test(self, data):
+        # create, fit, and evaluate the model
+        X_train, X_test, Y_train, Y_test, X, Y = self.prepare_data(data)
+        self.create_model(X)
+        self.fit_model(X_train, Y_train)
+        self.evaluate_model(X_test, Y_test)
+
 
 if __name__ == "__main__":
     # ### Import our data
@@ -172,7 +198,7 @@ if __name__ == "__main__":
     fina = pd.read_csv(path + "financial-headlines.csv")
     data = pd.concat([imdb, fina])  # combine into big
     salty = Salty()
+    # salty.bundle_train_test(data)
     X_train, X_test, Y_train, Y_test, X, Y = salty.prepare_data(data)
-    salty.create_model(X)
-    salty.fit_model(X_train, Y_train)
+    salty.load_model()
     salty.evaluate_model(X_test, Y_test)
