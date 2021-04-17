@@ -1,3 +1,8 @@
+# coding: utf-8
+import os
+
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"  # disables the annoying logs
+
 import numpy as np  # linear algebra
 import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
 from numpy import array
@@ -9,7 +14,6 @@ from keras.layers import Dense, Embedding, LSTM, SpatialDropout1D
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm, trange
 from keras.utils.np_utils import to_categorical
-import os
 
 # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 import tensorflow as tf
@@ -206,10 +210,20 @@ if __name__ == "__main__":
     path = "datasets/"
     imdb = pd.read_csv(path + "IMDB Dataset.csv")
     fina = pd.read_csv(path + "financial-headlines.csv")
-    data = pd.concat([imdb, fina])  # combine into big
+    print("Loaded financial and imdb dataset")
+    appli = pd.read_json(path + "Appliances.json", lines=True)
+    appli.overall = appli.overall.replace([4, 5], "positive")
+    appli.overall = appli.overall.replace([1, 2], "negative")
 
-    salty = Salty()
-    # train and test - takes 8 hours
+    appli.overall = appli.overall.replace([3], "neutral")
+    appli.rename(columns={"summary": "review", "overall": "sentiment"}, inplace=True)
+    print(appli)
+    appli = appli[["review", "sentiment"]]
+    print("Loaded appliances reviews")
+    data = pd.concat([appli, imdb, fina])  # combine into big
+    print(data)
+
+    salty = Salty(epochs=1)
     salty.bundle_train_test(data)
 
     # evaluate
