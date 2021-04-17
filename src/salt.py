@@ -72,16 +72,16 @@ class Salty:
         sentence = re.sub(r"\s+", " ", sentence)
         return sentence
 
-    def create_X(self, data):
-        # create X from a dataframe of articles
-        data["review"] = [
+    def create_X(self, series):
+        # create X from a series of articles
+        series = [
             self.preprocess_text(str(x))
-            for x in tqdm(data["review"], leave=False, desc="process")
+            for x in tqdm(series, leave=False, desc="process")
         ]
         # ### Tokenize the data and split X and y
-        self.tokenizer.fit_on_texts(data["review"].values)
+        self.tokenizer.fit_on_texts(series)
 
-        X = self.tokenizer.texts_to_sequences(data["review"].values)
+        X = self.tokenizer.texts_to_sequences(series)
         X = pad_sequences(X)
 
         return X
@@ -92,7 +92,7 @@ class Salty:
 
         data = data[data["sentiment"] != "neutral"]
 
-        X = self.create_X(data)
+        X = self.create_X(data["review"].values)
 
         Y = pd.get_dummies(data["sentiment"]).values  # convert to indicator columns
 
@@ -134,12 +134,22 @@ class Salty:
             X_train, Y_train, epochs=self.epochs, batch_size=self.batch_size, verbose=1
         )
         self.model.save("models/latest-model")
+        self.padded_shape = X_train.shape[1]
+        with open("models/latest-model/padded-shape", "w+") as f:
+            f.write(self.padded_shape)
         return self.model
 
     def load_model(self, fname="models/latest-model"):
         self.model = load_model(fname)
         self.model.summary()
+        self.padded_shape = int(open(f"{fname}/padded-shape").read().strip())
         return self.model
+
+    def predict_next_value(self, Xval):
+        result = self.model.predict(
+            Xval.reshape(1, self.padded_shape), batch_size=1, verbose=0
+        )
+        return np.argmax(result[0])
 
     # ### Test the model
     def evaluate_model(self, X_test, Y_test):
@@ -197,8 +207,9 @@ if __name__ == "__main__":
     imdb = pd.read_csv(path + "IMDB Dataset.csv")
     fina = pd.read_csv(path + "financial-headlines.csv")
     data = pd.concat([imdb, fina])  # combine into big
-    salty = Salty()
-    # salty.bundle_train_test(data)
+    salty = Salty(epochs=1)
+    salty.bundle_train_test(data)
+
     X_train, X_test, Y_train, Y_test, X, Y = salty.prepare_data(data)
     salty.load_model()
     salty.evaluate_model(X_test, Y_test)
