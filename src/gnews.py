@@ -1,9 +1,12 @@
 from newspaper import Article, ArticleException
 from GoogleNews import GoogleNews
 from threading import Thread
+from datetime import datetime, timedelta
 import pandas as pd
 import time
 from tqdm import tqdm
+
+WINDOW_TF = "%m/%d/%Y"
 
 
 class NewsParser:
@@ -30,12 +33,20 @@ class NewsParser:
         self.pbar.update(1)
         return inst["text"]
 
-    def get_articles(self, search_term, period="2d"):
+    def get_articles(
+        self,
+        search_term,
+        up_to=datetime.now().strftime(WINDOW_TF),
+        window=2,  # how many days back to go
+    ):
         """
         Get all articles
         """
         start = time.time()
-        self.googlenews.set_period(period)  # set the range
+        # use settimerange instead
+        end_date = up_to
+        start_date = (datetime.now() - timedelta(window)).strftime(WINDOW_TF)
+        self.googlenews.set_time_range(start_date, end_date)  # set the range
         self.googlenews.get_news(search_term)  # get the news
         results = self.googlenews.results()  # get the results
 
@@ -62,3 +73,8 @@ class NewsParser:
 
         # print(f"Got {len(results)} articles in {time.time()-start:.2f}s")
         return pd.DataFrame(results)
+
+
+if __name__ == "__main__":
+    n = NewsParser()
+    print(n.get_articles("tesla"))
