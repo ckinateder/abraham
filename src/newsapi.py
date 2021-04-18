@@ -1,3 +1,4 @@
+from os import execve
 from pandas.io import json
 import requests
 import pandas as pd
@@ -5,7 +6,17 @@ from datetime import datetime, timedelta
 from pprint import pprint
 
 BASE_URL = "https://newsapi.org/v2/everything?"
-API_KEY = open("../keys/newsapi_org").read().strip()
+
+try:
+    API_KEY = open("keys/newsapi_org").read().strip()
+except FileNotFoundError as e:
+    print(
+        "Couldn't load API key for newsapi.org (No such file or directory: 'keys/newsapi_org)"
+    )
+    API_KEY = ""
+except Exception as e:
+    print(f"Couldn't load API key for newsapi.org ({e})")
+    API_KEY = ""
 
 
 class NewsAPI:

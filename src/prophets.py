@@ -9,9 +9,12 @@ from tqdm import tqdm
 import re
 import pandas as pd
 import statistics
+from datetime import datetime
+
+WINDOW_TF = "%m/%d/%Y"
 
 
-class Anakin:
+class Elijiah:
     """
     Perform sentiment analysis on sentences
     """
@@ -66,21 +69,25 @@ class Anakin:
         return scores
 
 
-class Darth:
+class Isaiah:
     """
     Wraps everything into getting the sentiment for a given topic
     """
 
-    def __init__(self, window=2, news_source="google", splitting=False) -> None:
-        self.sia = Anakin()
+    def __init__(self, news_source="google", splitting=False) -> None:
+        self.sia = Elijiah()
         if news_source == "newsapi":
             self.newsparser = NewsAPI()
         else:
             self.newsparser = NewsParser()
-        self.window = window  # date range back to search for
         self.splitting = splitting  # does sia.analyze use recursion to split?
 
-    def get_articles(self, topics: list) -> Dict:
+    def get_articles(
+        self,
+        topics: list,
+        window: int = 2,
+        up_to: str = datetime.now().strftime(WINDOW_TF),
+    ) -> Dict:
         """
         Takes a list of topics and returns a dict
         ex -
@@ -91,7 +98,7 @@ class Darth:
         topic_results = {}
         for topic in topics:
             topic_results[topic] = self.newsparser.get_articles(
-                topic, window=self.window
+                topic, window=window, up_to=up_to
             )
         return topic_results
 
@@ -136,10 +143,30 @@ class Darth:
             scores[topic] = {"avg": total_avg, "nice": classified}
         return scores
 
-    def sentiment(self, topics: list):
+    def sentiment(
+        self,
+        topics: list,
+        window: int = 2,
+        up_to: str = datetime.now().strftime(WINDOW_TF),
+    ):
         """
         Main function
         """
-        articles = self.get_articles(topics)
+        articles = self.get_articles(topics, window=window, up_to=up_to)
         scores = self.score_all(articles)
         return scores
+
+
+if __name__ == "__main__":
+    darthvader = Isaiah(
+        news_source="google", splitting=True
+    )  # splitting means that it recursively splits a large text into sentences and analyzes each individually
+
+    # this command takes a bit of time to run because it has to download lots of articles
+    scores = darthvader.sentiment(
+        ["bitcoin", "biden"],
+        window=1,  # how many days back from up_to to get news from
+        up_to="04/18/2021",
+    )  # latest date to get news from
+
+    print(scores)
