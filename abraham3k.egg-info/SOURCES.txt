@@ -1,0 +1,6 @@
+README.md
+setup.py
+abraham3k.egg-info/PKG-INFO
+abraham3k.egg-info/SOURCES.txt
+abraham3k.egg-info/dependency_links.txt
+abraham3k.egg-info/top_level.txt

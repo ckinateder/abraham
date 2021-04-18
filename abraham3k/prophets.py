@@ -3,15 +3,164 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import sent_tokenize
-from gnews import NewsParser
-from newsapi import NewsAPI
+from GoogleNews import GoogleNews
+from newspaper import Article, ArticleException
 from tqdm import tqdm
+from threading import Thread
+from datetime import datetime, timedelta
 import re
 import pandas as pd
 import statistics
-from datetime import datetime
+import time, requests
 
 WINDOW_TF = "%m/%d/%Y"
+
+
+BASE_URL = "https://newsapi.org/v2/everything?"
+
+try:
+    API_KEY = open("keys/newsapi_org").read().strip()
+except FileNotFoundError as e:
+    print(
+        "Couldn't load API key for newsapi.org (No such file or directory: 'keys/newsapi_org)"
+    )
+    API_KEY = ""
+except Exception as e:
+    print(f"Couldn't load API key for newsapi.org ({e})")
+    API_KEY = ""
+
+
+class NewsAPI:
+    def __init__(self) -> None:
+        pass
+
+    def fetch_json(
+        self,
+        searchfor,
+        url=BASE_URL,
+        api_key=API_KEY,
+        pagesize=100,
+        page=1,
+        language="en",
+        from_date=(datetime.now() - timedelta(7)).strftime("%Y-%m-%d"),
+    ):
+        """
+        Search the news for a search term.
+        """
+        params = {
+            "q": searchfor,
+            "pageSize": pagesize,
+            "apiKey": api_key,
+            "language": language,
+            "page": page,
+            "from": from_date,
+        }
+        response = requests.get(url, params=params)
+        json_response = response.json()["articles"]
+        return json_response
+
+    def clean_response(self, jsonfile):
+        """
+        Cleanup the json response
+        """
+        results = []
+        for i in range(len(jsonfile)):
+            cleaned_item = {}
+            cleaned_item["title"] = jsonfile[i]["title"]
+            cleaned_item["author"] = jsonfile[i]["author"]
+            cleaned_item["source"] = jsonfile[i]["source"]
+            cleaned_item["desc"] = jsonfile[i]["description"]
+            cleaned_item["text"] = jsonfile[i]["content"]
+            cleaned_item["publishedAt"] = jsonfile[i]["publishedAt"]
+            cleaned_item["url"] = jsonfile[i]["url"]
+            cleaned_item["urlToImage"] = jsonfile[i]["urlToImage"]
+            results.append(cleaned_item)
+
+        return results
+
+    def cleaned_to_df(self, cleaned_dict):
+        """
+        Take a cleaned dictionary and return a pandas dataframe
+        """
+        return pd.DataFrame(cleaned_dict)
+
+    def get_articles(self, searchfor, period="1d"):
+        """
+        Wrap everything to one function
+        """
+        period = (datetime.now() - timedelta(int(period.replace("d", "")))).strftime(
+            "%Y-%m-%d"
+        )
+        jresponse = self.fetch_json(searchfor, from_date=period)
+        cleaned = self.clean_response(jresponse)
+        cleaned_df = self.cleaned_to_df(cleaned)
+        return cleaned_df
+
+
+class NewsParser:
+    def __init__(self) -> None:
+        self.googlenews = GoogleNews()  # create news object
+
+    def _get_text(
+        self, inst
+    ):  # download the article text for each link and save as a string
+        try:
+            article = Article(
+                "http://"
+                + inst["link"]
+                .replace("http://", "")
+                .replace("https://", "")  # remove https that already exists
+            )
+            article.download()
+            article.parse()
+            text = article.text.strip().replace("\n", " ")
+            inst["text"] = text
+
+        except ArticleException:
+            inst["text"] = ""
+        self.pbar.update(1)
+        return inst["text"]
+
+    def get_articles(
+        self,
+        search_term,
+        up_to=datetime.now().strftime(WINDOW_TF),
+        window=2,  # how many days back to go
+    ):
+        """
+        Get all articles
+        """
+        start = time.time()
+        # use settimerange instead
+        end_date = up_to
+        start_date = (datetime.now() - timedelta(window)).strftime(WINDOW_TF)
+        self.googlenews.set_time_range(start_date, end_date)  # set the range
+        self.googlenews.get_news(search_term)  # get the news
+        results = self.googlenews.results()  # get the results
+
+        self.pbar = tqdm(
+            total=len(results), unit="article", desc=search_term, leave=False
+        )
+
+        processes = []  # multi thread the execution
+        for i in results:
+            processes.append(
+                Thread(
+                    target=self._get_text,
+                    args=(i,),
+                )
+            )
+
+        # start
+        for proc in processes:
+            proc.start()
+        # join
+        for proc in processes:
+            proc.join()
+        self.pbar.close()
+
+        # print(f"Got {len(results)} articles in {time.time()-start:.2f}s")
+        return pd.DataFrame(results)
 
 
 class Elijiah:
