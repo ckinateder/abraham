@@ -54,7 +54,7 @@ print(scores)
 '''
 ```
 
-Or, you can run it step by step as well.
+Or, you can run it step by step, as well.
 
 ```python
 from starwars import Darth
@@ -106,4 +106,4 @@ print(scores)
 '''
 ```
 
-`Darth` supports two news sources: [Google News]([google news](https://news.google.com/)) and [NewsAPI](https://newsapi.org/). Default is [Google News]([google news](https://news.google.com/)), but you can change it to [NewsAPI](https://newsapi.org/) by passing `Darth(news_source='newsapi')` when instantiating.
+`Darth` supports two news sources: [Google News]([google news](https://news.google.com/)) and [NewsAPI](https://newsapi.org/). Default is [Google News]([google news](https://news.google.com/)), but you can change it to [NewsAPI](https://newsapi.org/) by passing `Darth(news_source='newsapi')` when instantiating. In order to use NewsAPI, you have to put your api key in `keys/newsapi_org`.
