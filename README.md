@@ -1,4 +1,5 @@
 # abraham
+[![PyPI version](https://badge.fury.io/py/abraham3k.svg)](https://badge.fury.io/py/abraham3k)
 
 Algorithmically predict public sentiment on a topic using VADER sentiment analysis.
 
