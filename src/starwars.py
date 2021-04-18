@@ -71,13 +71,13 @@ class Darth:
     Wraps everything into getting the sentiment for a given topic
     """
 
-    def __init__(self, period="1d", news_source="google", splitting=False) -> None:
+    def __init__(self, window=2, news_source="google", splitting=False) -> None:
         self.sia = Anakin()
         if news_source == "newsapi":
             self.newsparser = NewsAPI()
         else:
             self.newsparser = NewsParser()
-        self.period = period  # date range back to search for
+        self.window = window  # date range back to search for
         self.splitting = splitting  # does sia.analyze use recursion to split?
 
     def get_articles(self, topics: list) -> Dict:
@@ -91,7 +91,7 @@ class Darth:
         topic_results = {}
         for topic in topics:
             topic_results[topic] = self.newsparser.get_articles(
-                topic, period=self.period
+                topic, window=self.window
             )
         return topic_results
 
