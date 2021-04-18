@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: abraham3k
-Version: 1.1.0
+Version: 1.1.2
 Summary: Algorithmically predict public sentiment on a topic using VADER sentiment analysis
 Home-page: https://github.com/ckinateder/abraham
 Author: Calvin Kinateder
@@ -9,7 +9,17 @@ License: UNKNOWN
 Project-URL: Bug Tracker, https://github.com/ckinateder/abraham/issues
 Description: # abraham
         
+        [![PyPI version](https://badge.fury.io/py/abraham3k.svg)](https://badge.fury.io/py/abraham3k)
+        
         Algorithmically predict public sentiment on a topic using VADER sentiment analysis.
+        
+        ## Installation
+        
+        Installation is simple; just install via pip.
+        
+        ```bash
+        $ pip3 install abraham3k
+        ```
         
         ## Sample Output
         
@@ -17,7 +27,9 @@ Description: # abraham
         
         ```python
         from prophets import Isaiah
-        darthvader = Isaiah(news_source="google", splitting=True) # splitting means that it recursively splits a large text into sentences and analyzes each individually
+        
+        # splitting means that it recursively splits a large text into sentences and analyzes each individually
+        darthvader = Isaiah(news_source="google", splitting=True) 
         
         # this command takes a bit of time to run because it has to download lots of articles
         scores = darthvader.sentiment(["robinhood", 
@@ -70,7 +82,9 @@ Description: # abraham
         
         ```python
         from prophets import Isaiah
-        darthvader = Isaiah(news_source="google", splitting=True) # splitting means that it recursively splits a large text into sentences and analyzes each individually
+        
+        # splitting means that it recursively splits a large text into sentences and analyzes each individually
+        darthvader = Isaiah(news_source="google", splitting=True)
         
         # this command takes a bit of time to run because it has to download lots of articles
         articles = darthvader.get_articles(["robinhood", 
