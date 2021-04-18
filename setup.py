@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="abraham3k",
-    version="1.1.2",
+    version="1.1.3",
     author="Calvin Kinateder",
     author_email="calvinkinateder@gmail.com",
     description="Algorithmically predict public sentiment on a topic using VADER sentiment analysis",
