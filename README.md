@@ -9,7 +9,9 @@ You can run one command to do everything -
 
 ```python
 from prophets import Isaiah
-darthvader = Isaiah(news_source="google", splitting=True) # splitting means that it recursively splits a large text into sentences and analyzes each individually
+
+# splitting means that it recursively splits a large text into sentences and analyzes each individually
+darthvader = Isaiah(news_source="google", splitting=True) 
 
 # this command takes a bit of time to run because it has to download lots of articles
 scores = darthvader.sentiment(["robinhood", 
@@ -62,7 +64,9 @@ Or, you can run it step by step, as well.
 
 ```python
 from prophets import Isaiah
-darthvader = Isaiah(news_source="google", splitting=True) # splitting means that it recursively splits a large text into sentences and analyzes each individually
+
+# splitting means that it recursively splits a large text into sentences and analyzes each individually
+darthvader = Isaiah(news_source="google", splitting=True)
 
 # this command takes a bit of time to run because it has to download lots of articles
 articles = darthvader.get_articles(["robinhood", 
