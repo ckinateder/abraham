@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="abraham3k",
-    version="1.1.4",
+    version="1.1.6",
     author="Calvin Kinateder",
     author_email="calvinkinateder@gmail.com",
     description="Algorithmically predict public sentiment on a topic using VADER sentiment analysis",
@@ -20,6 +20,6 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    packages=setuptools.find_packages(where="abraham3k"),
+    packages=setuptools.find_packages(include=["abraham3k", "abraham3k.*"]),
     python_requires=">=3.6",
 )

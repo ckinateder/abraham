@@ -18,17 +18,6 @@ WINDOW_TF = "%m/%d/%Y"
 
 BASE_URL = "https://newsapi.org/v2/everything?"
 
-try:
-    API_KEY = open("keys/newsapi_org").read().strip()
-except FileNotFoundError as e:
-    print(
-        "Couldn't load API key for newsapi.org (No such file or directory: 'keys/newsapi_org)"
-    )
-    API_KEY = ""
-except Exception as e:
-    print(f"Couldn't load API key for newsapi.org ({e})")
-    API_KEY = ""
-
 
 class NewsAPI:
     def __init__(self) -> None:
@@ -37,8 +26,8 @@ class NewsAPI:
     def fetch_json(
         self,
         searchfor,
+        api_key,
         url=BASE_URL,
-        api_key=API_KEY,
         pagesize=100,
         page=1,
         language="en",
