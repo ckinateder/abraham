@@ -126,4 +126,4 @@ print(scores)
 '''
 ```
 
-`Isaiah` supports two news sources: [Google News]([google news](https://news.google.com/)) and [NewsAPI](https://newsapi.org/). Default is [Google News]([google news](https://news.google.com/)), but you can change it to [NewsAPI](https://newsapi.org/) by passing `Isaiah(news_source='newsapi')` when instantiating. In order to use NewsAPI, you have to put your api key in `keys/newsapi_org`.
+`Isaiah` supports two news sources: [Google News]([google news](https://news.google.com/)) and [NewsAPI](https://newsapi.org/). Default is [Google News]([google news](https://news.google.com/)), but you can change it to [NewsAPI](https://newsapi.org/) by passing `Isaiah(news_source='newsapi', api_key='<your api key')` when instantiating.

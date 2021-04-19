@@ -20,13 +20,15 @@ BASE_URL = "https://newsapi.org/v2/everything?"
 
 
 class NewsAPI:
-    def __init__(self) -> None:
-        pass
+    def __init__(
+        self,
+        api_key,
+    ) -> None:
+        self.api_key = api_key
 
     def fetch_json(
         self,
         searchfor,
-        api_key,
         url=BASE_URL,
         pagesize=100,
         page=1,
@@ -39,7 +41,7 @@ class NewsAPI:
         params = {
             "q": searchfor,
             "pageSize": pagesize,
-            "apiKey": api_key,
+            "apiKey": self.api_key,
             "language": language,
             "page": page,
             "from": from_date,
@@ -212,10 +214,16 @@ class Isaiah:
     Wraps everything into getting the sentiment for a given topic
     """
 
-    def __init__(self, news_source="google", splitting=False) -> None:
+    def __init__(self, news_source="google", api_key=None, splitting=False) -> None:
         self.sia = Elijiah()
         if news_source == "newsapi":
-            self.newsparser = NewsAPI()
+            if api_key:
+                self.newsparser = NewsAPI(api_key=api_key)
+            else:
+                print(
+                    "You request newsapi but no key was provided. Defaulting to googlenews."
+                )
+                self.newsparser = NewsParser()
         else:
             self.newsparser = NewsParser()
         self.splitting = splitting  # does sia.analyze use recursion to split?
