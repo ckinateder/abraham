@@ -8,6 +8,7 @@ abraham3k/__init__.py
 abraham3k/prophets.py
 abraham3k/salt.ipynb
 abraham3k/salt.py
+abraham3k/test_prophets.py
 abraham3k/word-embeddings.ipynb
 abraham3k.egg-info/PKG-INFO
 abraham3k.egg-info/SOURCES.txt

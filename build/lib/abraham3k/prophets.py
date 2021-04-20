@@ -263,7 +263,7 @@ class Isaiah:
     def compute_total_avg(
         self,
         results_df: pd.DataFrame,
-        weights={"title": 0.34, "desc": 0.33, "text": 0.33},
+        weights={"title": 0.1, "desc": 0.1, "text": 0.8},
         loud=True,
     ):
         # compute the average for each column
@@ -284,10 +284,11 @@ class Isaiah:
             wstr = f"WARNING: Sum of custom weights != 1 ({weights})"
             warnings.warn(wstr)
 
-        total_avg = (
+        total_avg = round(
             title_avg * weights["title"]
             + desc_avg * weights["desc"]
-            + text_avg * weights["text"]
+            + text_avg * weights["text"],
+            8,
         )
         # classify
         if total_avg >= 0.05:
