@@ -12,125 +12,77 @@ Installation is simple; just install via pip.
 $ pip3 install abraham3k
 ```
 
-## Sample Output
+## Basic Usage
 
-You can run one command to do everything -
-
-```python
-from prophets import Isaiah
-
-# splitting means that it recursively splits a large text into sentences and analyzes each individually
-darthvader = Isaiah(news_source="google", splitting=True) 
-
-# this command takes a bit of time to run because it has to download lots of articles
-scores = darthvader.sentiment(["robinhood", 
-                      "johnson and johnson", 
-                      "bitcoin", 
-                      "dogecoin", 
-                      "biden",  
-                      "amazon"], 
-                      window=2, # how many days back from up_to to get news from
-                      up_to="04/18/2021") # latest date to get news from
-
-print(scores)
-
-'''
-{'robinhood': 
-    {
-        'avg': 0.3798676562301132, 
-        'nice': 'positive :)'
-     },
- 'johnson and johnson': 
-    {
-        'avg': 0.27466788299009787, 
-        'nice': 'positive :)'
-    },
- 'bitcoin': 
-    {
-        'avg': 0.28669931035859125, 
-        'nice': 'positive :)'
-    },
- 'dogecoin': 
-    {
-        'avg': 0.2837840361036227, 
-        'nice': 'positive :)'
-    },
- 'biden': 
-    {
-        'avg': 0.2404157345348728, 
-        'nice': 'positive :)'
-    },
- 'amazon': 
-    {
-        'avg': 0.2894022880254384, 
-        'nice': 'positive :)'
-    }
-}
-'''
-```
-
-Or, you can run it step by step, as well.
+You can run one command to do everything
 
 ```python
 from prophets import Isaiah
 
-# splitting means that it recursively splits a large text into sentences and analyzes each individually
-darthvader = Isaiah(news_source="google", splitting=True)
+darthvader = Isaiah(news_source="google") 
 
-# this command takes a bit of time to run because it has to download lots of articles
-articles = darthvader.get_articles(["robinhood", 
-                      "johnson and johnson", 
-                      "bitcoin", 
-                      "dogecoin", 
-                      "biden",  
-                      "amazon"]
-                      window=2, # how many days back from up_to to get news from
-                      up_to="04/18/2021") # latest date to get news from
-
-scores = darthvader.score_all(articles)
-
+scores = darthvader.sentiment(["amd", 
+                               "microsoft", 
+                               "tesla", 
+                               "theranos"], 
+                               window=2)
 print(scores)
 
 '''
-{'robinhood': 
-    {
-        'avg': 0.3798676562301132, 
-        'nice': 'positive :)'
-     },
- 'johnson and johnson': 
-    {
-        'avg': 0.27466788299009787, 
-        'nice': 'positive :)'
-    },
- 'bitcoin': 
-    {
-        'avg': 0.28669931035859125, 
-        'nice': 'positive :)'
-    },
- 'dogecoin': 
-    {
-        'avg': 0.2837840361036227, 
-        'nice': 'positive :)'
-    },
- 'biden': 
-    {
-        'avg': 0.2404157345348728, 
-        'nice': 'positive :)'
-    },
- 'amazon': 
-    {
-        'avg': 0.2894022880254384, 
-        'nice': 'positive :)'
-    }
-}
+{'amd': {'avg': 0.32922767,
+         'desc_avg': 0.40470959,
+         'info': {'news_source': 'google',
+                  'splitting': False,
+                  'weights': {'desc': 0.1, 'text': 0.8, 'title': 0.1}},
+         'nice': 'positive',
+         'text_avg': 0.31924348,
+         'title_avg': 0.3336193},
+ 'microsoft': {'avg': 0.22709808,
+               'desc_avg': 0.35126282,
+               'info': {'news_source': 'google',
+                        'splitting': False,
+                        'weights': {'desc': 0.1, 'text': 0.8, 'title': 0.1}},
+               'nice': 'positive',
+               'text_avg': 0.22539444,
+               'title_avg': 0.1165625},
+ 'tesla': {'avg': -0.20538455,
+           'desc_avg': -0.22413444,
+           'info': {'news_source': 'google',
+                    'splitting': False,
+                    'weights': {'desc': 0.1, 'text': 0.8, 'title': 0.1}},
+           'nice': 'negative',
+           'text_avg': -0.19356265,
+           'title_avg': -0.28120986},
+ 'theranos': {'avg': -0.036198,
+              'desc_avg': 0.03842,
+              'info': {'news_source': 'google',
+                       'splitting': False,
+                       'weights': {'desc': 0.1, 'text': 0.8, 'title': 0.1}},
+              'nice': 'neutral',
+              'text_avg': -0.08745,
+              'title_avg': 0.2992}}
 '''
 ```
 
-`Isaiah` supports two news sources: [Google News](https://news.google.com/) and [NewsAPI](https://newsapi.org/). Default is [Google News](https://news.google.com/), but you can change it to [NewsAPI](https://newsapi.org/) by passing `Isaiah(news_source='newsapi', api_key='<your api key')` when instantiating.
+## Changing News Sources
 
-## NewsAPI Integration
+`Isaiah` supports two news sources: [Google News](https://news.google.com/) and [NewsAPI](https://newsapi.org/). Default is [Google News](https://news.google.com/), but you can change it to [NewsAPI](https://newsapi.org/) by passing `Isaiah(news_source='newsapi', api_key='<your api key')` when instantiating. I'd highly recommend using [NewsAPI](https://newsapi.org/). It's much better than the [Google News](https://news.google.com/) API. Setup is really simple, just head to the [register](https://newsapi.org/register) page and sign up to get your API key.
 
-I'd highly recommend using [NewsAPI](https://newsapi.org/). It's much better than the [Google News](https://news.google.com/) API. Setup is really simple, just head to the [register](https://newsapi.org/register) page and sign up. As I explained above, just pass your key to the constructor when instantiating.
+## Detailed Usage
+
+Currently, there are a couple extra options you can use to tweak the output.
+
+When instatiating the class, you can pass up to five optional keyword arguments: `news_source` and `api_key` (as explained above), `splitting`, and `weights`.
+
+* `loud`: `bool` - Whether or not the classifier prints out each individual average or not. Default: `False`.
+* `splitting`: `bool` - Recursively splits a large text into sentences and analyzes each sentence individually, rather than examining the article as a block. Default: `False`.
+* `weights`: `dict` - This chooses what each individual category (`text`, `title`, `desc`) is weighted as (must add up to 1). Default: `weights={"title": 0.1, "desc": 0.1, "text": 0.8}`.
+
+When running the main function, `sentiment`, there is one requred argument, `topics`, and two optional keyword arguments: `window` and `up_to`.
+
+* `topics`: `list` - The list of the topics (each a `str`) to search for.
+* `up_to`: `str` - The latest day to search for, in format `YYYY-MM-DD`. Default: current date.
+* `window`: `int` - How many days back from `up_to` to search for. Default `2`.
 
 ## Updates
 

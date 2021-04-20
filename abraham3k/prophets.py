@@ -18,7 +18,7 @@ from dateutil.parser._parser import UnknownTimezoneWarning
 warnings.simplefilter("ignore", UnknownTimezoneWarning)
 
 # define time formats for each
-WINDOW_TF = "%m/%d/%Y"
+GOOGLENEWS_TF = "%m/%d/%Y"
 NEWSAPI_TF = "%Y-%m-%d"
 
 BASE_URL = "https://newsapi.org/v2/everything?"
@@ -122,7 +122,7 @@ class GoogleNewsParser:
     def get_articles(
         self,
         search_term,
-        up_to=datetime.now().strftime(WINDOW_TF),
+        up_to=datetime.now().strftime(NEWSAPI_TF),
         window=2,  # how many days back to go
     ):
         """
@@ -130,8 +130,8 @@ class GoogleNewsParser:
         """
         start = time.time()
         # use settimerange instead
-        end_date = up_to
-        start_date = (datetime.now() - timedelta(window)).strftime(WINDOW_TF)
+        end_date = datetime.strptime(up_to, NEWSAPI_TF).strftime(GOOGLENEWS_TF)
+        start_date = (datetime.now() - timedelta(window)).strftime(GOOGLENEWS_TF)
         self.googlenews.set_time_range(start_date, end_date)  # set the range
         self.googlenews.get_news(search_term)  # get the news
         results = self.googlenews.results()  # get the results
@@ -226,25 +226,32 @@ class Isaiah:
         news_source="google",
         api_key=None,
         splitting=False,
+        weights={"title": 0.1, "desc": 0.1, "text": 0.8},
+        loud=False,
     ) -> None:
         self.sia = Elijiah()
         if news_source == "newsapi":
             if api_key:
+                self.news_source = "google"
                 self.newsparser = NewsAPI(api_key=api_key)
             else:
                 print(
                     "You requested newsapi but no key was provided. Defaulting to googlenews."
                 )
+                self.news_source = "google"
                 self.newsparser = GoogleNewsParser()
         else:
+            self.news_source = "google"
             self.newsparser = GoogleNewsParser()
         self.splitting = splitting  # does sia.analyze use recursion to split?
+        self.weights = weights
+        self.loud = loud
 
     def get_articles(
         self,
         topics: list,
         window: int = 2,
-        up_to: str = datetime.now().strftime(WINDOW_TF),
+        up_to: str = datetime.now().strftime(NEWSAPI_TF),
     ) -> Dict:
         """
         Takes a list of topics and returns a dict
@@ -263,31 +270,29 @@ class Isaiah:
     def compute_total_avg(
         self,
         results_df: pd.DataFrame,
-        weights={"title": 0.1, "desc": 0.1, "text": 0.8},
-        loud=True,
     ):
         # compute the average for each column
         titles = list(results_df.title)
         desc = list(results_df.desc)
         text = list(results_df.text)
-        title_avg = self.sia.analyze_texts(
-            titles, recursive=self.splitting
-        ).compound.mean()
-        desc_avg = self.sia.analyze_texts(
-            desc, recursive=self.splitting
-        ).compound.mean()
-        text_avg = self.sia.analyze_texts(
-            text, recursive=self.splitting
-        ).compound.mean()
+        title_avg = round(
+            self.sia.analyze_texts(titles, recursive=self.splitting).compound.mean(), 8
+        )
+        desc_avg = round(
+            self.sia.analyze_texts(desc, recursive=self.splitting).compound.mean(), 8
+        )
+        text_avg = round(
+            self.sia.analyze_texts(text, recursive=self.splitting).compound.mean(), 8
+        )
 
-        if weights["title"] + weights["text"] + weights["desc"] != 1:
-            wstr = f"WARNING: Sum of custom weights != 1 ({weights})"
+        if self.weights["title"] + self.weights["text"] + self.weights["desc"] != 1:
+            wstr = f"WARNING: Sum of custom weights != 1 ({self.weights})"
             warnings.warn(wstr)
 
         total_avg = round(
-            title_avg * weights["title"]
-            + desc_avg * weights["desc"]
-            + text_avg * weights["text"],
+            title_avg * self.weights["title"]
+            + desc_avg * self.weights["desc"]
+            + text_avg * self.weights["text"],
             8,
         )
         # classify
@@ -298,28 +303,40 @@ class Isaiah:
         else:
             classified = "neutral"
 
-        if loud:
+        if self.loud:
             print(f"Title avg: {round(title_avg*100,2)}% (compound={title_avg:.8f})")
             print(f"Desc avg: {round(desc_avg*100,2)}% (compound={desc_avg:.8f})")
             print(f"Text avg: {round(text_avg*100,2)}% (compound={text_avg:.8f})")
             print(
                 f"[Total avg: {round(total_avg*100,2)}% (compound={total_avg:.8f}) <{classified}>]"
             )
-        return total_avg, classified
+        returned_dict = {
+            "avg": total_avg,
+            "title_avg": title_avg,
+            "desc_avg": desc_avg,
+            "text_avg": text_avg,
+            "info": {
+                "weights": self.weights,
+                "news_source": self.news_source,
+                "splitting": self.splitting,
+            },
+            "nice": classified,
+        }
+        return returned_dict
 
     def score_all(self, topic_results: dict):
         # test all and build a dict
         scores = {}
         for topic in topic_results:
-            total_avg, classified = self.compute_total_avg(topic_results[topic])
-            scores[topic] = {"avg": total_avg, "nice": classified}
+            classification = self.compute_total_avg(topic_results[topic])
+            scores[topic] = classification
         return scores
 
     def sentiment(
         self,
         topics: list,
         window: int = 2,
-        up_to: str = datetime.now().strftime(WINDOW_TF),
+        up_to: str = datetime.now().strftime(NEWSAPI_TF),
     ):
         """
         Main function
@@ -334,6 +351,7 @@ if __name__ == "__main__":
     darthvader = Isaiah(
         news_source="newsapi",
         splitting=False,
+        weights={"title": 0.1, "desc": 0.1, "text": 0.8},
     )  # splitting means that it recursively splits a large text into sentences and analyzes each individually
 
     args = [sys.argv[1:]] if sys.argv[1:] else ["tesla"]  # default args
