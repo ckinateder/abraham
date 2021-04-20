@@ -10,7 +10,6 @@ from threading import Thread
 from datetime import datetime, timedelta
 import re
 import pandas as pd
-import statistics
 import time, requests
 import warnings
 import sys

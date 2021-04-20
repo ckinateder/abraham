@@ -12,6 +12,7 @@ abraham3k/word-embeddings.ipynb
 abraham3k.egg-info/PKG-INFO
 abraham3k.egg-info/SOURCES.txt
 abraham3k.egg-info/dependency_links.txt
+abraham3k.egg-info/requires.txt
 abraham3k.egg-info/top_level.txt
 models/latest-model/padded-shape
 models/latest-model/saved_model.pb

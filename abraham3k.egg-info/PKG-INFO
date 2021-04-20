@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: abraham3k
-Version: 1.1.9
+Version: 1.2.0
 Summary: Algorithmically predict public sentiment on a topic using VADER sentiment analysis
 Home-page: https://github.com/ckinateder/abraham
 Author: Calvin Kinateder
@@ -136,6 +136,10 @@ Description: # abraham
         ```
         
         `Isaiah` supports two news sources: [Google News]([google news](https://news.google.com/)) and [NewsAPI](https://newsapi.org/). Default is [Google News]([google news](https://news.google.com/)), but you can change it to [NewsAPI](https://newsapi.org/) by passing `Isaiah(news_source='newsapi', api_key='<your api key')` when instantiating.
+        
+        ## Updates
+        
+        I've made it pretty simple (at least for me) to push updates. Once I'm in the directory, I can run `$ ./build-push 1.2.0 "update install requirements"` where `1.2.0` is the version and `"update install requirements"` is the git commit message. It will update to PyPi and to the github repository.
         
 Platform: UNKNOWN
 Classifier: Programming Language :: Python :: 3

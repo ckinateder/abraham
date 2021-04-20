@@ -22,4 +22,11 @@ setuptools.setup(
     ],
     packages=setuptools.find_packages(include=["abraham3k", "abraham3k.*"]),
     python_requires=">=3.6",
+    install_requires=[
+        "nltk>=3.6.1",
+        "newspaper3k>=0.2.8",
+        "GoogleNews>=1.5.7",
+        "pandas>=1.2.3",
+        "tqdm>=4.58.0",
+    ],
 )
