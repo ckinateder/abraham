@@ -13,12 +13,14 @@ import pandas as pd
 import statistics
 import time, requests
 import warnings
+import sys
 from dateutil.parser._parser import UnknownTimezoneWarning
 
 warnings.simplefilter("ignore", UnknownTimezoneWarning)
 
+# define time formats for each
 WINDOW_TF = "%m/%d/%Y"
-
+NEWSAPI_TF = "%Y-%m-%d"
 
 BASE_URL = "https://newsapi.org/v2/everything?"
 
@@ -37,7 +39,8 @@ class NewsAPI:
         pagesize=100,
         page=1,
         language="en",
-        from_date=(datetime.now() - timedelta(7)).strftime("%Y-%m-%d"),
+        from_date=(datetime.now() - timedelta(7)).strftime(NEWSAPI_TF),
+        to_date=datetime.now().strftime(NEWSAPI_TF),
     ):
         """
         Search the news for a search term.
@@ -49,6 +52,7 @@ class NewsAPI:
             "language": language,
             "page": page,
             "from": from_date,
+            "to": to_date,
         }
         response = requests.get(url, params=params)
         json_response = response.json()["articles"]
@@ -79,20 +83,20 @@ class NewsAPI:
         """
         return pd.DataFrame(cleaned_dict)
 
-    def get_articles(self, searchfor, period="1d"):
+    def get_articles(
+        self, searchfor, up_to=datetime.now().strftime(NEWSAPI_TF), window=1
+    ):
         """
         Wrap everything to one function
         """
-        period = (datetime.now() - timedelta(int(period.replace("d", "")))).strftime(
-            "%Y-%m-%d"
-        )
-        jresponse = self.fetch_json(searchfor, from_date=period)
+        period = (datetime.now() - timedelta(window)).strftime(NEWSAPI_TF)
+        jresponse = self.fetch_json(searchfor, from_date=period, to_date=up_to)
         cleaned = self.clean_response(jresponse)
         cleaned_df = self.cleaned_to_df(cleaned)
         return cleaned_df
 
 
-class NewsParser:
+class GoogleNewsParser:
     def __init__(self) -> None:
         self.googlenews = GoogleNews()  # create news object
 
@@ -218,18 +222,23 @@ class Isaiah:
     Wraps everything into getting the sentiment for a given topic
     """
 
-    def __init__(self, news_source="google", api_key=None, splitting=False) -> None:
+    def __init__(
+        self,
+        news_source="google",
+        api_key=None,
+        splitting=False,
+    ) -> None:
         self.sia = Elijiah()
         if news_source == "newsapi":
             if api_key:
                 self.newsparser = NewsAPI(api_key=api_key)
             else:
                 print(
-                    "You request newsapi but no key was provided. Defaulting to googlenews."
+                    "You requested newsapi but no key was provided. Defaulting to googlenews."
                 )
-                self.newsparser = NewsParser()
+                self.newsparser = GoogleNewsParser()
         else:
-            self.newsparser = NewsParser()
+            self.newsparser = GoogleNewsParser()
         self.splitting = splitting  # does sia.analyze use recursion to split?
 
     def get_articles(
@@ -252,7 +261,12 @@ class Isaiah:
             )
         return topic_results
 
-    def compute_total_avg(self, results_df: pd.DataFrame, loud=False):
+    def compute_total_avg(
+        self,
+        results_df: pd.DataFrame,
+        weights={"title": 0.34, "desc": 0.33, "text": 0.33},
+        loud=True,
+    ):
         # compute the average for each column
         titles = list(results_df.title)
         desc = list(results_df.desc)
@@ -266,7 +280,16 @@ class Isaiah:
         text_avg = self.sia.analyze_texts(
             text, recursive=self.splitting
         ).compound.mean()
-        total_avg = statistics.mean([title_avg, desc_avg, text_avg])
+
+        if weights["title"] + weights["text"] + weights["desc"] != 1:
+            wstr = f"WARNING: Sum of custom weights != 1 ({weights})"
+            warnings.warn(wstr)
+
+        total_avg = (
+            title_avg * weights["title"]
+            + desc_avg * weights["desc"]
+            + text_avg * weights["text"]
+        )
         # classify
         if total_avg >= 0.05:
             classified = "positive"
@@ -280,9 +303,8 @@ class Isaiah:
             print(f"Desc avg: {round(desc_avg*100,2)}% (compound={desc_avg:.8f})")
             print(f"Text avg: {round(text_avg*100,2)}% (compound={text_avg:.8f})")
             print(
-                f"--\nTotal avg: {round(total_avg*100,2)}% (compound={total_avg:.8f})"
+                f"[Total avg: {round(total_avg*100,2)}% (compound={total_avg:.8f}) <{classified}>]"
             )
-            print(f"{classified}")
         return total_avg, classified
 
     def score_all(self, topic_results: dict):
@@ -308,15 +330,18 @@ class Isaiah:
 
 
 if __name__ == "__main__":
+    print(f"Abraham Version: {open('version').read().strip()}")
     darthvader = Isaiah(
-        news_source="google", splitting=True
+        news_source="newsapi",
+        api_key="3530e04f04034a85a0ebf4d925c83c69",
+        splitting=False,
     )  # splitting means that it recursively splits a large text into sentences and analyzes each individually
 
-    # this command takes a bit of time to run because it has to download lots of articles
+    args = [sys.argv[1:]] if sys.argv[1:] else ["tesla"]  # default args
+
     scores = darthvader.sentiment(
-        ["bitcoin", "biden"],
-        window=1,  # how many days back from up_to to get news from
-        up_to="04/18/2021",
+        *args,
+        window=3,  # how many days back from up_to to get news from
     )  # latest date to get news from
 
     print(scores)

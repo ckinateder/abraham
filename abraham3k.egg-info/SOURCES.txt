@@ -1,9 +1,9 @@
 .gitignore
-.python-version
 README.md
 build-push
 requirements.txt
 setup.py
+version
 abraham3k/__init__.py
 abraham3k/prophets.py
 abraham3k/salt.ipynb
