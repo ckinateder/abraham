@@ -12,6 +12,10 @@ import re
 import pandas as pd
 import statistics
 import time, requests
+import warnings
+from dateutil.parser._parser import UnknownTimezoneWarning
+
+warnings.simplefilter("ignore", UnknownTimezoneWarning)
 
 WINDOW_TF = "%m/%d/%Y"
 
