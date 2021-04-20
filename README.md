@@ -126,11 +126,11 @@ print(scores)
 '''
 ```
 
-`Isaiah` supports two news sources: [Google News]((https://news.google.com/)) and [NewsAPI](https://newsapi.org/). Default is [Google News]((https://news.google.com/)), but you can change it to [NewsAPI](https://newsapi.org/) by passing `Isaiah(news_source='newsapi', api_key='<your api key')` when instantiating.
+`Isaiah` supports two news sources: [Google News](https://news.google.com/) and [NewsAPI](https://newsapi.org/). Default is [Google News](https://news.google.com/), but you can change it to [NewsAPI](https://newsapi.org/) by passing `Isaiah(news_source='newsapi', api_key='<your api key')` when instantiating.
 
 ## NewsAPI Integration
 
-I'd highly recommend using [NewsAPI](https://newsapi.org/). It's much better than the [Google News]((https://news.google.com/)) API. Setup is really simple, just head to the [register](https://newsapi.org/register) page and sign up. As I explained above, just pass your key to the constructor when instantiating.
+I'd highly recommend using [NewsAPI](https://newsapi.org/). It's much better than the [Google News](https://news.google.com/) API. Setup is really simple, just head to the [register](https://newsapi.org/register) page and sign up. As I explained above, just pass your key to the constructor when instantiating.
 
 ## Updates
 
