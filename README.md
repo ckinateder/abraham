@@ -124,3 +124,7 @@ When running the main functions, `sentiment` and `sentiment_summary`, there is o
 ## Updates
 
 I've made it pretty simple (at least for me) to push updates. Once I'm in the directory, I can run `$ ./build-push 1.2.0 "update install requirements"` where `1.2.0` is the version and `"update install requirements"` is the git commit message. It will update to PyPi and to the github repository.
+
+## Notes
+
+Currently, there's another algorithm in progress (SALT), and those files are in the `abraham3k/` directory (`salt.py`, `salt.ipynb`). They're not ready for use yet, so don't worry about importing them or anything.
