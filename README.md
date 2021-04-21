@@ -17,7 +17,7 @@ $ pip3 install abraham3k
 You can run one command to do everything
 
 ```python
-from prophets import Isaiah
+from abraham3k.prophets import Isaiah
 
 darthvader = Isaiah(news_source="google") 
 
