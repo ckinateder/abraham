@@ -2,7 +2,7 @@
 
 ![PyPI](https://img.shields.io/pypi/v/abraham3k)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/abraham3k)
-![PyPI - License](https://img.shields.io/pypi/l/abraham3k)
+![GitHub](https://img.shields.io/github/license/ckinateder/abraham)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/abraham3k)
 ![Libraries.io dependency status for latest release](https://img.shields.io/librariesio/release/pypi/abraham3k)
 ![GitHub issues](https://img.shields.io/github/issues/ckinateder/abraham)
