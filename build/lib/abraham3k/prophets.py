@@ -69,7 +69,7 @@ class NewsAPI:
             cleaned_item["source"] = jsonfile[i]["source"]
             cleaned_item["desc"] = jsonfile[i]["description"]
             cleaned_item["text"] = jsonfile[i]["content"]
-            cleaned_item["publishedAt"] = jsonfile[i]["publishedAt"]
+            cleaned_item["datetime"] = jsonfile[i]["publishedAt"]
             cleaned_item["url"] = jsonfile[i]["url"]
             cleaned_item["urlToImage"] = jsonfile[i]["urlToImage"]
             results.append(cleaned_item)
@@ -188,7 +188,7 @@ class Elijiah:
         new_sentence = " ".join(lemmatized_words)
         return new_sentence
 
-    def analyze_texts(self, sentences: list, recursive: bool = False):
+    def analyze_texts(self, frame: pd.DataFrame, section: str, recursive: bool = False):
         """
         Takes a list of sentences and returns a dataframe the sentences and scores
         Example -
@@ -197,20 +197,27 @@ class Elijiah:
         ...
         """
         scores = []
-        for item in tqdm(sentences, leave=False, unit="text", desc="analyze"):
+        for ind in tqdm(
+            frame.index, leave=False, unit="text", desc=f"analyze {section}"
+        ):
             # iterate through list of sent tokenize
+            item = frame[section][ind]
+            date = frame["datetime"][ind]
+
             if recursive:
                 for sentence in sent_tokenize(item):
                     sentence = self.normalize_text(sentence)
                     score = self.analyzer.polarity_scores(sentence)
                     if score["compound"] != 0:  # remove all zeroes
                         score["sentence"] = sentence
+                        score["datetime"] = date
                         scores.append(score)
             else:
                 sentence = self.normalize_text(item)
                 score = self.analyzer.polarity_scores(sentence)
                 if score["compound"] != 0:  # remove all zeroes
                     score["sentence"] = sentence
+                    score["datetime"] = date
                     scores.append(score)
         scores = pd.DataFrame(scores)
         return scores
@@ -272,17 +279,26 @@ class Isaiah:
         results_df: pd.DataFrame,
     ):
         # compute the average for each column
-        titles = list(results_df.title)
-        desc = list(results_df.desc)
-        text = list(results_df.text)
+        # titles = list(results_df.title)
+        # desc = list(results_df.desc)
+        # text = list(results_df.text)
         title_avg = round(
-            self.sia.analyze_texts(titles, recursive=self.splitting).compound.mean(), 8
+            self.sia.analyze_texts(
+                results_df, "title", recursive=self.splitting
+            ).compound.mean(),
+            8,
         )
         desc_avg = round(
-            self.sia.analyze_texts(desc, recursive=self.splitting).compound.mean(), 8
+            self.sia.analyze_texts(
+                results_df, "desc", recursive=self.splitting
+            ).compound.mean(),
+            8,
         )
         text_avg = round(
-            self.sia.analyze_texts(text, recursive=self.splitting).compound.mean(), 8
+            self.sia.analyze_texts(
+                results_df, "text", recursive=self.splitting
+            ).compound.mean(),
+            8,
         )
 
         if self.weights["title"] + self.weights["text"] + self.weights["desc"] != 1:
@@ -332,7 +348,7 @@ class Isaiah:
             scores[topic] = classification
         return scores
 
-    def sentiment(
+    def sentiment_summary(
         self,
         topics: list,
         window: int = 2,
@@ -343,6 +359,31 @@ class Isaiah:
         """
         articles = self.get_articles(topics, window=window, up_to=up_to)
         scores = self.score_all(articles)
+        return scores
+
+    def sentiment(
+        self,
+        topics: list,
+        window: int = 2,
+        up_to: str = datetime.now().strftime(NEWSAPI_TF),
+    ):
+        """
+        Returns the indepth scores as a two-deep dict.
+        """
+        articles = self.get_articles(topics, window=window, up_to=up_to)
+
+        scores = {}
+        for topic in articles:
+            titles = self.sia.analyze_texts(
+                articles[topic], "title", recursive=self.splitting
+            )
+            desc = self.sia.analyze_texts(
+                articles[topic], "desc", recursive=self.splitting
+            )
+            text = self.sia.analyze_texts(
+                articles[topic], "text", recursive=self.splitting
+            )
+            scores[topic] = {"title": titles, "desc": desc, "text": text}
         return scores
 
 
