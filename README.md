@@ -127,4 +127,8 @@ I've made it pretty simple (at least for me) to push updates. Once I'm in the di
 
 ## Notes
 
-Currently, there's another algorithm in progress (SALT), including `salt.py` and `salt.ipynb` in the `abraham3k/` directory and the entire `models/` directory. They're not ready for use yet, so don't worry about importing them or anything. Pull requests welcome!
+Currently, there's another algorithm in progress (SALT), including `salt.py` and `salt.ipynb` in the `abraham3k/` directory and the entire `models/` directory. They're not ready for use yet, so don't worry about importing them or anything. 
+
+## Contributions
+
+Pull requests welcome!
