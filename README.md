@@ -1,6 +1,13 @@
 # abraham
 
-[![PyPI version](https://badge.fury.io/py/abraham3k.svg)](https://badge.fury.io/py/abraham3k)
+![PyPI](https://img.shields.io/pypi/v/abraham3k)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/abraham3k)
+![PyPI - License](https://img.shields.io/pypi/l/abraham3k)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/abraham3k)
+![Libraries.io dependency status for latest release](https://img.shields.io/librariesio/release/pypi/abraham3k)
+![GitHub issues](https://img.shields.io/github/issues/ckinateder/abraham)
+![GitHub last commit](https://img.shields.io/github/last-commit/ckinateder/abraham)
+
 
 Algorithmically predict public sentiment on a topic using VADER sentiment analysis.
 
