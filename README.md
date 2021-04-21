@@ -109,7 +109,7 @@ When instatiating the class, you can pass up to five optional keyword arguments:
 * `splitting`: `bool` - Recursively splits a large text into sentences and analyzes each sentence individually, rather than examining the article as a block. Default: `False`.
 * `weights`: `dict` - This chooses what each individual category (`text`, `title`, `desc`) is weighted as (must add up to 1). Default: `weights={"title": 0.1, "desc": 0.1, "text": 0.8}`.
 
-When running the main function, `sentiment`, there is one requred argument, `topics`, and two optional keyword arguments: `window` and `up_to`.
+When running the main functions, `sentiment` and `sentiment_summary`, there is one requred argument, `topics`, and two optional keyword arguments: `window` and `up_to`.
 
 * `topics`: `list` - The list of the topics (each a `str`) to search for.
 * `up_to`: `str` - The latest day to search for, in format `YYYY-MM-DD`. Default: current date.
