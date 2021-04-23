@@ -522,7 +522,7 @@ class Elijiah:
         scores = pd.DataFrame(scores)
         return scores
 
-    def analyze_tweet_text(self, tweets: pd.DataFrame):
+    def analyze_flair_text(self, tweets: pd.DataFrame, section: str):
         """Takes a dataframe of tweets and analyzes and saves the score for each row
         ...
 
@@ -530,6 +530,8 @@ class Elijiah:
         ----------
         tweet_frame: pd.DataFrame
             dataframe containg section
+        section: pd.DataFrame
+            section of tweet_frame
 
         Returns
         -------
@@ -539,21 +541,22 @@ class Elijiah:
         # we will append probability and sentiment preds later
         probs = []
         sentiments = []
-
-        tweets["text"] = tweets["text"].apply(self.normalize_text)
-
-        for tweet in tweets["text"].to_list():
+        newframe = tweets.copy()
+        newframe[section] = newframe[section].apply(self.normalize_text)
+        for tweet in tqdm(
+            newframe[section].to_list(), desc=section, leave=False, dynamic_ncols=True
+        ):
             # make prediction
             sentence = flair.data.Sentence(tweet)
             self.sunflair.predict(sentence)
             # extract sentiment prediction
             probs.append(sentence.labels[0].score)  # numerical score 0-1
             sentiments.append(sentence.labels[0].value)  # 'POSITIVE' or 'NEGATIVE'
-
         # add probability and sentiment predictions to tweets dataframe
-        tweets["probability"] = probs
-        tweets["sentiment"] = sentiments
-        return tweets
+        newframe["probability"] = probs
+        newframe["sentiment"] = sentiments
+
+        return newframe
 
 
 class Isaiah:
@@ -825,7 +828,7 @@ class Isaiah:
             scores[topic] = classification
         return scores
 
-    def news_sentiment_summary(
+    def ___news_sentiment_summary(
         self,
         topics: list,
         window: int = 2,
@@ -881,17 +884,16 @@ class Isaiah:
         """
 
         articles = self.get_articles(topics, window=window, up_to=up_to)
-
         scores = {}
         for topic in articles:
-            titles = self.sia.analyze_news_text(
-                articles[topic], "title", recursive=self.splitting
+            titles = self.sia.analyze_flair_text(
+                articles[topic][["title", "datetime"]], "title"
             )
-            desc = self.sia.analyze_news_text(
-                articles[topic], "desc", recursive=self.splitting
+            desc = self.sia.analyze_flair_text(
+                articles[topic][["desc", "datetime"]], "desc"
             )
-            text = self.sia.analyze_news_text(
-                articles[topic], "text", recursive=self.splitting
+            text = self.sia.analyze_flair_text(
+                articles[topic][["text", "datetime"]], "text"
             )
             scores[topic] = {"title": titles, "desc": desc, "text": text}
         return scores
@@ -924,7 +926,7 @@ class Isaiah:
             tweets = twitterparser.get_tweets(
                 topic, start_time=start_time, end_time=end_time
             )
-            scored_frame = self.sia.analyze_tweet_text(tweets)
+            scored_frame = self.sia.analyze_flair_text(tweets, "text")
             scores[topic] = scored_frame
         return scores
 

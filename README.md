@@ -8,7 +8,7 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/ckinateder/abraham)
 
 
-Algorithmically predict public sentiment on a topic using VADER sentiment analysis.
+Algorithmically predict public sentiment on a topic using flair sentiment analysis.
 
 ## Installation
 
@@ -20,57 +20,7 @@ $ pip3 install abraham3k
 
 ## Basic Usage
 
-You can run one command to execute the main function `news_sentiment_summary`.
-
-```python
-from abraham3k.prophets import Isaiah
-
-darthvader = Isaiah(news_source="google") 
-
-scores = darthvader.news_sentiment_summary(["amd", 
-                               "microsoft", 
-                               "tesla", 
-                               "theranos"], 
-                               window=2)
-print(scores)
-
-'''
-{'amd': {'avg': 0.32922767,
-         'desc_avg': 0.40470959,
-         'info': {'news_source': 'google',
-                  'splitting': False,
-                  'weights': {'desc': 0.1, 'text': 0.8, 'title': 0.1}},
-         'nice': 'positive',
-         'text_avg': 0.31924348,
-         'title_avg': 0.3336193},
- 'microsoft': {'avg': 0.22709808,
-               'desc_avg': 0.35126282,
-               'info': {'news_source': 'google',
-                        'splitting': False,
-                        'weights': {'desc': 0.1, 'text': 0.8, 'title': 0.1}},
-               'nice': 'positive',
-               'text_avg': 0.22539444,
-               'title_avg': 0.1165625},
- 'tesla': {'avg': -0.20538455,
-           'desc_avg': -0.22413444,
-           'info': {'news_source': 'google',
-                    'splitting': False,
-                    'weights': {'desc': 0.1, 'text': 0.8, 'title': 0.1}},
-           'nice': 'negative',
-           'text_avg': -0.19356265,
-           'title_avg': -0.28120986},
- 'theranos': {'avg': -0.036198,
-              'desc_avg': 0.03842,
-              'info': {'news_source': 'google',
-                       'splitting': False,
-                       'weights': {'desc': 0.1, 'text': 0.8, 'title': 0.1}},
-              'nice': 'neutral',
-              'text_avg': -0.08745,
-              'title_avg': 0.2992}}
-'''
-```
-
-You can also run a separate function, `summary` to get the raw scores. This will return a nested dictionary with keys for each topic.
+You can run the main function, `news_sentiment` to get the raw scores. This will return a nested dictionary with keys for each topic.
 
 ```python
 from abraham3k.prophets import Isaiah
@@ -85,19 +35,18 @@ scores = darthvader.news_sentiment(["amd",
 print(scores['tesla']['text'])
 
 '''
-[87 rows x 6 columns]
-      neg    neu    pos  compound                                           sentence              datetime
-0   0.200  0.800  0.000   -0.7184  This weekend two men aged 59 69 died Tesla Mod...  2021-04-20T01:12:33Z
-1   0.113  0.714  0.172    0.1027  The National Highway Transportation Safety Adm...  2021-04-19T17:11:20Z
-2   0.211  0.789  0.000   -0.5859  Tesla working vehicle tailored Chinese consume...  2021-04-20T09:31:36Z
-3   0.000  0.702  0.298    0.7003  Amazon told Bloomberg thatit canned Lord Rings...  2021-04-19T11:30:30Z
-4   0.128  0.769  0.103   -0.1779  The first fatal incident involve Tesla one dri...  2021-04-19T15:42:47Z
-..    ...    ...    ...       ...                                                ...                   ...
-76  0.349  0.509  0.142   -0.7717  Two people killed fiery crash Tesla authority ...  2021-04-19T04:02:56Z
-77  0.094  0.906  0.000   -0.3818  LiveUpdated April 20, 2021, 11:51 a.m. ET Apri...  2021-04-20T15:36:21Z
-78  0.087  0.837  0.076   -0.0754  Though SpaceX‘s new Starlink satellite current...  2021-04-19T08:25:20Z
-79  0.275  0.725  0.000   -0.8225  Over weekend, Tesla Model S involved accident ...  2021-04-20T09:50:12Z
-80  0.332  0.514  0.154   -0.7096  My heart sink I write AI going wrong. Behind e...  2021-04-20T10:39:02Z
+                                                 desc              datetime  probability sentiment
+0   The latest PassMark ranking show AMD Intel swi...  2021-04-22T18:45:03Z     0.999276  NEGATIVE
+1   The X570 chipset AMD offer advanced feature se...  2021-04-22T14:33:07Z     0.999649  POSITIVE
+2   Apple released first developer beta macOS 11.4...  2021-04-21T19:10:02Z     0.990774  POSITIVE
+3   Prepare terror PC. The release highly anticipa...  2021-04-22T18:00:02Z     0.839055  POSITIVE
+4   Stressing ex x86 Canadian AI chip startup Tens...  2021-04-22T13:00:07Z     0.759295  POSITIVE
+..                                                ...                   ...          ...       ...
+95  Orthopaedic Medical Group Tampa Bay (OMG) exci...  2021-04-21T22:46:00Z     0.979155  POSITIVE
+96  OtterBox appointed Leader, proudly 100% Austra...  2021-04-21T23:00:00Z     0.992927  POSITIVE
+97  WATG, world's leading global destination hospi...  2021-04-21T22:52:00Z     0.993889  POSITIVE
+98  AINQA Health Pte. Ltd. (Headquartered Singapor...  2021-04-22T02:30:00Z     0.641172  POSITIVE
+99  Press Release Nokia publish first-quarter repo...  2021-04-22T05:00:00Z     0.894449  NEGATIVE
 '''
 ```
 
