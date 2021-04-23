@@ -274,10 +274,7 @@ class Isaiah:
             )
         return topic_results
 
-    def compute_total_avg(
-        self,
-        results_df: pd.DataFrame,
-    ):
+    def compute_total_avg(self, results_df: pd.DataFrame, meta: dict):
         # compute the average for each column
         # titles = list(results_df.title)
         # desc = list(results_df.desc)
@@ -326,25 +323,26 @@ class Isaiah:
             print(
                 f"[Total avg: {round(total_avg*100,2)}% (compound={total_avg:.8f}) <{classified}>]"
             )
+
+        meta["weights"] = self.weights
+        meta["news_source"] = self.news_source
+        meta["splitting"] = self.splitting
+
         returned_dict = {
             "avg": total_avg,
             "title_avg": title_avg,
             "desc_avg": desc_avg,
             "text_avg": text_avg,
-            "info": {
-                "weights": self.weights,
-                "news_source": self.news_source,
-                "splitting": self.splitting,
-            },
+            "info": meta,
             "nice": classified,
         }
         return returned_dict
 
-    def score_all(self, topic_results: dict):
+    def score_all(self, topic_results: dict, meta: dict):
         # test all and build a dict
         scores = {}
         for topic in topic_results:
-            classification = self.compute_total_avg(topic_results[topic])
+            classification = self.compute_total_avg(topic_results[topic], meta=meta)
             scores[topic] = classification
         return scores
 
@@ -358,7 +356,7 @@ class Isaiah:
         Main function
         """
         articles = self.get_articles(topics, window=window, up_to=up_to)
-        scores = self.score_all(articles)
+        scores = self.score_all(articles, meta={"window": window, "up_to": up_to})
         return scores
 
     def sentiment(
