@@ -25,24 +25,74 @@ BASE_URL = "https://newsapi.org/v2/everything?"
 
 
 class NewsAPI:
+    """
+    A class used to fetch news from newsapi.org
+
+    ...
+
+    Attributes
+    ----------
+    api_key : str
+        api key to connect to newsapi.org
+
+    Methods
+    -------
+    fetch_json(searchfor, url=BASE_URL, pagesize=100, page=1,
+               language="en", from_date=7 days ago, to_date=today)
+        fetches the articles and returns a json
+    clean_response(jsonfile)
+        cleans the fetched jsonfile and renames columns
+    cleaned_to_df(cleaned_dict)
+        parses the cleaned json dictionary to a pandas DataFrame
+    get_articles(search_for, up_to=today, window=1)
+        wraps the 3 previous functions all into one user friendly one
+    """
+
     def __init__(
         self,
         api_key,
     ) -> None:
+        """
+        Parameters
+        ----------
+        api_key : str
+            api key to connect to newsapi.org
+        """
         self.api_key = api_key
 
     def fetch_json(
         self,
-        searchfor,
-        url=BASE_URL,
-        pagesize=100,
-        page=1,
-        language="en",
-        from_date=(datetime.now() - timedelta(7)).strftime(NEWSAPI_TF),
-        to_date=datetime.now().strftime(NEWSAPI_TF),
+        searchfor: str,
+        url: str = BASE_URL,
+        pagesize: int = 100,
+        page: int = 1,
+        language: str = "en",
+        from_date: str = (datetime.now() - timedelta(7)).strftime(NEWSAPI_TF),
+        to_date: str = datetime.now().strftime(NEWSAPI_TF),
     ):
-        """
-        Search the news for a search term.
+        """Search the news for a search term.
+
+        Parameters
+        ----------
+        searchfor: str
+            term to search for
+        url: str = BASE_URL, optional
+            url to pass calls to
+        pagesize: int = 100, optional
+            pagesize to return the object
+        page: int = 1, optional
+            page to read from
+        language: str = "en", optional
+            language to search in
+        from_date: str = (datetime.now() - timedelta(7)).strftime(NEWSAPI_TF), optional
+            farthest day back to go when searching
+        to_date: str = datetime.now().strftime(NEWSAPI_TF), optional
+            latest date to go up to when searching
+
+        Returns
+        -------
+        json
+            a raw json response containing just the articles and their data
         """
         params = {
             "q": searchfor,
@@ -58,8 +108,17 @@ class NewsAPI:
         return json_response
 
     def clean_response(self, jsonfile):
-        """
-        Cleanup the json response
+        """Cleans up a json response and gives a dictionary
+
+        Parameters
+        ----------
+        searchfor: json
+            raw json to be cleaned
+
+        Returns
+        -------
+        list
+            a list of every single cleaned dictionary
         """
         results = []
         for i in range(len(jsonfile)):
@@ -77,16 +136,40 @@ class NewsAPI:
         return results
 
     def cleaned_to_df(self, cleaned_dict):
-        """
-        Take a cleaned dictionary and return a pandas dataframe
+        """Creates a pandas DataFrame from a cleaned dictionary
+
+        Parameters
+        ----------
+        cleaned_dict: list
+            list of dicts to be converted
+
+        Returns
+        -------
+        pandas.DataFrame
+            a dataframe of the results with columns ['title', 'author', 'source', 'desc',
+                                                    'text', 'datetime', 'url', 'urlToImage']
         """
         return pd.DataFrame(cleaned_dict)
 
     def get_articles(
         self, searchfor, up_to=datetime.now().strftime(NEWSAPI_TF), window=1
     ):
-        """
-        Wrap everything to one function
+        """Gets articles for a single search term
+
+        Parameters
+        ----------
+        searchfor: str
+            term to search for
+        up_to : str = datetime.now().strftime(NEWSAPI_TF)
+            latest date to get news for
+        window : int = 1
+            how many days back to search for
+
+        Returns
+        -------
+        pandas.DataFrame
+            a dataframe of the results with columns ['title', 'author', 'source', 'desc',
+                                                    'text', 'datetime', 'url', 'urlToImage']
         """
         period = (datetime.now() - timedelta(window)).strftime(NEWSAPI_TF)
         jresponse = self.fetch_json(searchfor, from_date=period, to_date=up_to)
@@ -96,12 +179,39 @@ class NewsAPI:
 
 
 class GoogleNewsParser:
+    """
+    A class used to fetch news from googlenews
+
+    ...
+
+    Attributes
+    ----------
+    None
+
+    Methods
+    -------
+    _get_text(inst)
+        gets the text for each article it recieves
+    get_articles(search_for, up_to=today, window=1)
+        Gets articles for a single search term
+    """
+
     def __init__(self) -> None:
         self.googlenews = GoogleNews()  # create news object
 
-    def _get_text(
-        self, inst
-    ):  # download the article text for each link and save as a string
+    def _get_text(self, inst):
+        """Gets text from an article url (inst["link"])
+
+        Parameters
+        ----------
+        inst : dict
+            dictionary containing the link
+
+        Returns
+        -------
+        str
+            the article
+        """
         try:
             article = Article(
                 "http://"
@@ -125,8 +235,22 @@ class GoogleNewsParser:
         up_to=datetime.now().strftime(NEWSAPI_TF),
         window=2,  # how many days back to go
     ):
-        """
-        Get all articles
+        """Gets articles for a single search term
+
+        Parameters
+        ----------
+        searchfor: str
+            term to search for
+        up_to : str = datetime.now().strftime(NEWSAPI_TF)
+            latest date to get news for
+        window : int = 1
+            how many days back to search for
+
+        Returns
+        -------
+        pandas.DataFrame
+            a dataframe of the results with columns ['title', 'author', 'source', 'desc',
+                                                    'text', 'datetime', 'url', 'urlToImage']
         """
         start = time.time()
         # use settimerange instead
@@ -163,7 +287,26 @@ class GoogleNewsParser:
 
 class Elijiah:
     """
-    Perform sentiment analysis on sentences
+    Performs sentiment analysis on sentences. Named after the biblical prophet
+
+    ...
+
+    Attributes
+    ----------
+    analyzer : SentimentIntensityAnalyzer
+        VADER analyzer from nltk
+    lemmatizer : WordNetLemmatizer
+        lemmatizer from nltk
+
+    Methods
+    -------
+    sentiment_analyzer_sent(sentence)
+        analyzes a single sentence and returns the score
+    normalize_text(sentence)
+        normalizes a sentence (removes tags, lemmatizes, etc...)
+    analyze_texts(frame, section, recursive)
+        takes a dataframe and a section and scores each row. if recursive=True, it will only
+        analyze one sentence at time
     """
 
     def __init__(self) -> None:
@@ -171,11 +314,35 @@ class Elijiah:
         self.lemmatizer = WordNetLemmatizer()
 
     def sentiment_analyzer_sent(self, sentence: str):
+        """Analyzes a single sentence and returns the score
+
+        Parameters
+        ----------
+        sentence : str
+            sentence to analyze
+
+        Returns
+        -------
+        dict
+            the scores
+        """
         score = self.analyzer.polarity_scores(sentence)
         print("{:-<40} {}".format(sentence, str(score)))
+        return score
 
     def normalize_text(self, sentence: str):
-        # normalize the sentence
+        """Normalizes a sentence
+
+        Parameters
+        ----------
+        sentence : str
+            sentence to normalize
+
+        Returns
+        -------
+        str
+            the normalized sentetnce
+        """
         subbed = sentence
         clean = re.compile("<.*?>")
         subbed = re.sub(clean, "", subbed)
@@ -189,12 +356,25 @@ class Elijiah:
         return new_sentence
 
     def analyze_texts(self, frame: pd.DataFrame, section: str, recursive: bool = False):
-        """
-        Takes a list of sentences and returns a dataframe the sentences and scores
+        """Takes a dataframe and a section and scores each row of frame[section]. If recursive=True, it will only
+        analyze one sentence at time.
         Example -
             neg    neu    pos  compound                   sentence
         0  0.123  0.877  0.000   -0.1027   Cramer call Coinbase 'real deal,' warns invest
         ...
+
+        Parameters
+        ----------
+        frame: pd.DataFrame
+            dataframe containg section
+        section: str
+            section of dataframe to analyze
+        recursive: bool = False
+
+        Returns
+        -------
+        pandas.DataFrame
+            new dataframe of scores
         """
         scores = []
         for ind in tqdm(
@@ -225,7 +405,38 @@ class Elijiah:
 
 class Isaiah:
     """
-    Wraps everything into getting the sentiment for a given topic
+    Performs sentiment analysis on a search term by taking care of gathering
+    all the articles and scoring. Named after the biblical prophet
+
+    ...
+
+    Attributes
+    ----------
+    sia : Elijiah
+        Elijiah analyzer
+    news_source : str
+        where to get the news from (google or newsapi)
+    splitting : bool
+        whether or not to recursively analyze each sentence
+    weights : dict
+        how to weight the title, desc, and text attributes
+        ex: {"title": 0.2, "desc": 0.3, "text": 0.5}
+    loud : bool
+        print unnecessary output (for debugging ususally)
+
+    Methods
+    -------
+    get_articles(search_for, up_to=today, window=2)
+        gets articles for a single search term
+    compute_total_avg(results_df, meta)
+        computes avg scores for each row and column of an entire dataframe
+    score_all(topic_results, meta)
+        takes care of scoring the entire dataframe for each topic
+    news_sentiment_summary(topics, window=2, up_to=today)
+        takes a list of topics and computes the avg scores for each
+    news_sentiment(topics, window=2, up_to=today)
+        takes a list of topics and gets the raw scores for each
+        (per topic per text type per row)
     """
 
     def __init__(
@@ -236,6 +447,20 @@ class Isaiah:
         weights={"title": 0.2, "desc": 0.3, "text": 0.5},
         loud=False,
     ) -> None:
+        """
+        Parameters
+        ----------
+        news_source : str = "google"
+            where to get the news from
+        api_key : str = None
+            api key to connect to newsapi.org
+        spliting : bool = False
+            recursively analyze each sentence or not
+        weights : dict = {"title": 0.2, "desc": 0.3, "text": 0.5}
+            how to weight the title, desc, and text attributes
+        loud : dict = False
+            print unnecessary output (for debugging ususally)
+        """
         self.sia = Elijiah()
         if news_source == "newsapi":
             if api_key:
@@ -260,12 +485,29 @@ class Isaiah:
         window: int = 2,
         up_to: str = datetime.now().strftime(NEWSAPI_TF),
     ) -> Dict:
-        """
-        Takes a list of topics and returns a dict
-        ex -
-        {
-            'coinbase': <pd.DataFrame>,
-        }
+        """Takes a list of topics and returns a dict of topics : pd.dataframe
+
+        Parameters
+        ----------
+        topics : list
+            list of terms to search for
+        up_to : str = datetime.now().strftime(NEWSAPI_TF)
+            latest date to get news for
+        window : int = 2
+            how many days back to search for
+
+        Returns
+        -------
+        dict
+            in format {topic: <pd.DataFrame>, topic: <pd.DataFrame>, ... } with
+            dataframe being of the results with columns ['title', 'author',
+                'source', 'desc', 'text', 'datetime', 'url', 'urlToImage']
+            ex:
+            {
+                'coinbase': <pd.DataFrame>,
+                'bitcoin': <pd.DataFrame>,
+                ...
+            }
         """
         topic_results = {}
         for topic in topics:
@@ -275,10 +517,38 @@ class Isaiah:
         return topic_results
 
     def compute_total_avg(self, results_df: pd.DataFrame, meta: dict):
-        # compute the average for each column
-        # titles = list(results_df.title)
-        # desc = list(results_df.desc)
-        # text = list(results_df.text)
+        """Computes avg scores for each row and then column of an entire dataframe
+
+        Parameters
+        ----------
+        results_df: pd.DataFrame
+            dataframe of results with columns ['title', 'author', 'source',
+                            'desc', 'text', 'datetime', 'url', 'urlToImage']
+        meta: dict
+            any additional information to return with the scores.
+            usually {"window": window, "up_to": up_to}
+
+        Returns
+        -------
+        returned_dict : dict
+            a dict of the avg scores and meta information
+            ex:
+            {
+                'avg': -0.06751676,
+                'desc_avg': -0.07466768,
+                'info': {
+                    'news_source': 'newsapi',
+                    'splitting': True,
+                    'up_to': '2021-4-20',
+                    'weights': {'desc': 0.3, 'text': 0.5, 'title': 0.2},
+                    'window': 2
+                        },
+                'nice': 'negative',
+                'text_avg': -0.04153505,
+                'title_avg': -0.12174464
+            }
+
+        """
         title_avg = round(
             self.sia.analyze_texts(
                 results_df, "title", recursive=self.splitting
@@ -339,35 +609,118 @@ class Isaiah:
         return returned_dict
 
     def score_all(self, topic_results: dict, meta: dict):
-        # test all and build a dict
+        """Takes care of scoring the entire dataframe for each topic
+
+        Paramaters
+        ----------
+        topic_results: dict
+            in format {topic: <pd.DataFrame>, topic: <pd.DataFrame>, ... } with
+            dataframe being of the results with columns ['title', 'author',
+                'source', 'desc', 'text', 'datetime', 'url', 'urlToImage']
+            ex:
+            {
+                'coinbase': <pd.DataFrame>,
+                'bitcoin': <pd.DataFrame>,
+                ...
+            }
+        meta: dict
+            any additional information to return with the scores.
+            usually {"window": window, "up_to": up_to}
+
+        Returns
+        -------
+        scores : dict
+            a dict of dicts arranged as {topic: scores}
+            ex:
+            {
+            'amd': {'avg': 0.2880456,
+                    'desc_avg': 0.31842738,
+                    'info': {
+                        'news_source': 'newsapi',
+                        'splitting': True,
+                        'up_to': '2021-4-20',
+                        'weights': {'desc': 0.3, 'text': 0.5, 'title': 0.2},
+                        'window': 2
+                            },
+                    'nice': 'positive',
+                    'text_avg': 0.2613019,
+                    'title_avg': 0.3093322},
+            'tesla': {'avg': -0.06751676,
+                    'desc_avg': -0.07466768,
+                    'info': {
+                        'news_source': 'newsapi',
+                        'splitting': True,
+                        'up_to': '2021-4-20',
+                        'weights': {'desc': 0.3, 'text': 0.5, 'title': 0.2},
+                        'window': 2
+                            },
+                    'nice': 'negative',
+                    'text_avg': -0.04153505,
+                    'title_avg': -0.12174464},
+            }
+
+        """
         scores = {}
         for topic in topic_results:
             classification = self.compute_total_avg(topic_results[topic], meta=meta)
             scores[topic] = classification
         return scores
 
-    def sentiment_summary(
+    def news_sentiment_summary(
         self,
         topics: list,
         window: int = 2,
         up_to: str = datetime.now().strftime(NEWSAPI_TF),
     ):
-        """
-        Main function
+        """Gets the summary sentiment for each topic
+
+        Parameters
+        ----------
+        topics : list
+            list of terms to search for
+        up_to : str = datetime.now().strftime(NEWSAPI_TF)
+            latest date to get news for
+        window : int = 2
+            how many days back to search for
+
+        Returns
+        -------
+        scores : dict
+            a dict of dicts arranged as {topic: scores} (see score_all for a sample return)
         """
         articles = self.get_articles(topics, window=window, up_to=up_to)
         scores = self.score_all(articles, meta={"window": window, "up_to": up_to})
         return scores
 
-    def sentiment(
+    def news_sentiment(
         self,
         topics: list,
         window: int = 2,
         up_to: str = datetime.now().strftime(NEWSAPI_TF),
     ):
+        """Gets the WHOLE sentiment for each topic. No or minimal averaging occurs.
+
+        Parameters
+        ----------
+        topics : list
+            list of terms to search for
+        up_to : str = datetime.now().strftime(NEWSAPI_TF)
+            latest date to get news for
+        window : int = 2
+            how many days back to search for
+
+        Returns
+        -------
+        scores : dict
+            returns a 2d dict, set up like so:
+            {
+                topic: {"title": titles, "desc": desc, "text": text}
+            }
+            where title, desc, and text are dataframes and each row looks like this:
+            neg    neu    pos  compound                   sentence              datetime
+          0.173  0.827  0.000   -0.5859  Tesla working vehicle ...  2021-04-20T09:31:36Z
         """
-        Returns the indepth scores as a two-deep dict.
-        """
+
         articles = self.get_articles(topics, window=window, up_to=up_to)
 
         scores = {}
@@ -386,7 +739,6 @@ class Isaiah:
 
 
 if __name__ == "__main__":
-    # print(f"Abraham Version: {open('version').read().strip()}")
     darthvader = Isaiah(
         news_source="newsapi",
         splitting=False,
@@ -395,7 +747,7 @@ if __name__ == "__main__":
 
     args = [sys.argv[1:]] if sys.argv[1:] else ["tesla"]  # default args
 
-    scores = darthvader.sentiment(
+    scores = darthvader.news_sentiment(
         *args,
         window=3,  # how many days back from up_to to get news from
     )  # latest date to get news from

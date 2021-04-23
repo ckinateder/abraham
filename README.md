@@ -20,14 +20,14 @@ $ pip3 install abraham3k
 
 ## Basic Usage
 
-You can run one command to execute the main function `sentiment_summary`.
+You can run one command to execute the main function `news_sentiment_summary`.
 
 ```python
 from abraham3k.prophets import Isaiah
 
 darthvader = Isaiah(news_source="google") 
 
-scores = darthvader.sentiment_summary(["amd", 
+scores = darthvader.news_sentiment_summary(["amd", 
                                "microsoft", 
                                "tesla", 
                                "theranos"], 
@@ -77,7 +77,7 @@ from abraham3k.prophets import Isaiah
 
 darthvader = Isaiah(news_source="google") 
 
-scores = darthvader.sentiment(["amd", 
+scores = darthvader.news_sentiment(["amd", 
                                "microsoft", 
                                "tesla", 
                                "theranos"], 
@@ -115,7 +115,7 @@ When instatiating the class, you can pass up to five optional keyword arguments:
 * `splitting`: `bool` - Recursively splits a large text into sentences and analyzes each sentence individually, rather than examining the article as a block. Default: `False`.
 * `weights`: `dict` - This chooses what each individual category (`text`, `title`, `desc`) is weighted as (must add up to 1). Default: `weights={"title": 0.1, "desc": 0.1, "text": 0.8}`.
 
-When running the main functions, `sentiment` and `sentiment_summary`, there is one requred argument, `topics`, and two optional keyword arguments: `window` and `up_to`.
+When running the main functions, `news_sentiment` and `news_sentiment_summary`, there is one requred argument, `topics`, and two optional keyword arguments: `window` and `up_to`.
 
 * `topics`: `list` - The list of the topics (each a `str`) to search for.
 * `up_to`: `str` - The latest day to search for, in format `YYYY-MM-DD`. Default: current date.
