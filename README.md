@@ -118,7 +118,7 @@ When instatiating the class, you can pass up to five optional keyword arguments:
 When running the main functions, `news_sentiment` and `news_sentiment_summary`, there is one requred argument, `topics`, and two optional keyword arguments: `window` and `up_to`.
 
 * `topics`: `list` - The list of the topics (each a `str`) to search for.
-* `up_to`: `str` - The latest day to search for, in format `YYYY-MM-DD`. Default: current date.
+* `up_to`: `str` - The latest day to search for, in ISO format (`%Y-%m-%dT%H:%M:%SZ`). Default: current date.
 * `window`: `int` - How many days back from `up_to` to search for. Default `2`.
 
 ## Updates
@@ -127,7 +127,7 @@ I've made it pretty simple (at least for me) to push updates. Once I'm in the di
 
 ## Notes
 
-Currently, there's another algorithm in progress (SALT), including `salt.py` and `salt.ipynb` in the `abraham3k/` directory and the entire `models/` directory. They're not ready for use yet, so don't worry about importing them or anything. 
+Currently, there's another algorithm in progress (SALT), including `salt.py` and `salt.ipynb` in the `abraham3k/` directory and the entire `models/` directory. They're not ready for use yet, so don't worry about importing them or anything.
 
 ## Contributions
 

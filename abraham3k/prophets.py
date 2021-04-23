@@ -14,14 +14,17 @@ import time, requests
 import warnings
 import sys
 from dateutil.parser._parser import UnknownTimezoneWarning
+import flair
 
 warnings.simplefilter("ignore", UnknownTimezoneWarning)
 
 # define time formats for each
 GOOGLENEWS_TF = "%m/%d/%Y"
-NEWSAPI_TF = "%Y-%m-%d"
+# TWITTER_TF = "%Y-%m-%d"
+TWITTER_TF = "%Y-%m-%dT%H:%M:%SZ"
 
-BASE_URL = "https://newsapi.org/v2/everything?"
+NEWSAPI_URL = "https://newsapi.org/v2/everything?"
+TWITTER_URL = "https://api.twitter.com/1.1/tweets/search/recent"
 
 
 class NewsAPI:
@@ -32,12 +35,12 @@ class NewsAPI:
 
     Attributes
     ----------
-    api_key : str
+    newsapi_key : str
         api key to connect to newsapi.org
 
     Methods
     -------
-    fetch_json(searchfor, url=BASE_URL, pagesize=100, page=1,
+    fetch_json(searchfor, url=NEWSAPI_URL, pagesize=100, page=1,
                language="en", from_date=7 days ago, to_date=today)
         fetches the articles and returns a json
     clean_response(jsonfile)
@@ -50,25 +53,25 @@ class NewsAPI:
 
     def __init__(
         self,
-        api_key,
+        newsapi_key,
     ) -> None:
         """
         Parameters
         ----------
-        api_key : str
+        newsapi_key : str
             api key to connect to newsapi.org
         """
-        self.api_key = api_key
+        self.newsapi_key = newsapi_key
 
     def fetch_json(
         self,
         searchfor: str,
-        url: str = BASE_URL,
+        url: str = NEWSAPI_URL,
         pagesize: int = 100,
         page: int = 1,
         language: str = "en",
-        from_date: str = (datetime.now() - timedelta(7)).strftime(NEWSAPI_TF),
-        to_date: str = datetime.now().strftime(NEWSAPI_TF),
+        from_date: str = (datetime.now() - timedelta(7)).strftime(TWITTER_TF),
+        to_date: str = datetime.now().strftime(TWITTER_TF),
     ):
         """Search the news for a search term.
 
@@ -76,7 +79,7 @@ class NewsAPI:
         ----------
         searchfor: str
             term to search for
-        url: str = BASE_URL, optional
+        url: str = NEWSAPI_URL, optional
             url to pass calls to
         pagesize: int = 100, optional
             pagesize to return the object
@@ -84,10 +87,10 @@ class NewsAPI:
             page to read from
         language: str = "en", optional
             language to search in
-        from_date: str = (datetime.now() - timedelta(7)).strftime(NEWSAPI_TF), optional
-            farthest day back to go when searching
-        to_date: str = datetime.now().strftime(NEWSAPI_TF), optional
-            latest date to go up to when searching
+        from_date: str = (datetime.now() - timedelta(7)).strftime(TWITTER_TF), optional
+            farthest day back to go when searching, in "%Y-%m-%d" format
+        to_date: str = datetime.now().strftime(TWITTER_TF), optional
+            latest date to go up to when searching, in "%Y-%m-%d" format
 
         Returns
         -------
@@ -97,7 +100,7 @@ class NewsAPI:
         params = {
             "q": searchfor,
             "pageSize": pagesize,
-            "apiKey": self.api_key,
+            "apiKey": self.newsapi_key,
             "language": language,
             "page": page,
             "from": from_date,
@@ -152,7 +155,7 @@ class NewsAPI:
         return pd.DataFrame(cleaned_dict)
 
     def get_articles(
-        self, searchfor, up_to=datetime.now().strftime(NEWSAPI_TF), window=1
+        self, searchfor, up_to=datetime.now().strftime(TWITTER_TF), window=1
     ):
         """Gets articles for a single search term
 
@@ -160,8 +163,8 @@ class NewsAPI:
         ----------
         searchfor: str
             term to search for
-        up_to : str = datetime.now().strftime(NEWSAPI_TF)
-            latest date to get news for
+        up_to : str = datetime.now().strftime(TWITTER_TF)
+            latest date to get news for, in "%Y-%m-%d" format
         window : int = 1
             how many days back to search for
 
@@ -171,7 +174,7 @@ class NewsAPI:
             a dataframe of the results with columns ['title', 'author', 'source', 'desc',
                                                     'text', 'datetime', 'url', 'urlToImage']
         """
-        period = (datetime.now() - timedelta(window)).strftime(NEWSAPI_TF)
+        period = (datetime.now() - timedelta(window)).strftime(TWITTER_TF)
         jresponse = self.fetch_json(searchfor, from_date=period, to_date=up_to)
         cleaned = self.clean_response(jresponse)
         cleaned_df = self.cleaned_to_df(cleaned)
@@ -232,7 +235,7 @@ class GoogleNewsParser:
     def get_articles(
         self,
         search_term,
-        up_to=datetime.now().strftime(NEWSAPI_TF),
+        up_to=datetime.now().strftime(TWITTER_TF),
         window=2,  # how many days back to go
     ):
         """Gets articles for a single search term
@@ -241,7 +244,7 @@ class GoogleNewsParser:
         ----------
         searchfor: str
             term to search for
-        up_to : str = datetime.now().strftime(NEWSAPI_TF)
+        up_to : str = datetime.now().strftime(TWITTER_TF)
             latest date to get news for
         window : int = 1
             how many days back to search for
@@ -254,7 +257,7 @@ class GoogleNewsParser:
         """
         start = time.time()
         # use settimerange instead
-        end_date = datetime.strptime(up_to, NEWSAPI_TF).strftime(GOOGLENEWS_TF)
+        end_date = datetime.strptime(up_to, TWITTER_TF).strftime(GOOGLENEWS_TF)
         start_date = (datetime.now() - timedelta(window)).strftime(GOOGLENEWS_TF)
         self.googlenews.set_time_range(start_date, end_date)  # set the range
         self.googlenews.get_news(search_term)  # get the news
@@ -285,6 +288,102 @@ class GoogleNewsParser:
         return pd.DataFrame(results)
 
 
+class TwitterParser:
+    """
+    Gets tweets for analyzing
+
+    ...
+
+    Attributes
+    ----------
+    bearer_token : str
+        twitter api bearer token
+
+    Methods
+    .......
+    get_tweets(topic)
+        takes a topic and gets the tweets for it
+    """
+
+    def __init__(self, bearer_token) -> None:
+        """
+        Parameters
+        ----------
+        bearer_token : str
+            twitter api bearer token
+        """
+        self.bearer_token = bearer_token
+
+    def parse_tweet(self, tweet):
+        """Parse a tweet and return just what we need
+
+        Parameters
+        ----------
+        tweet : json
+            the raw tweet object
+
+        Returns
+        -------
+        data : dict
+            a dict of just the important parts (id, text, created_at)
+        """
+        data = {
+            "id": tweet["id_str"],
+            "created_at": tweet["created_at"],
+            "text": tweet["full_text"],
+        }
+        return data
+
+    def get_tweets(
+        self,
+        topic,
+        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
+        end_time=datetime.now().strftime(TWITTER_TF),
+    ):  # how many days back to go
+        """Get the tweets for a given topic
+
+        Parameters
+        ----------
+        topic : str
+            topic to search for
+        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
+        end_time : str = datetime.now().strftime(TWITTER_TF)
+            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
+
+        Returns
+        -------
+        tweets : pd.DataFrame
+            a dataframe of the tweets
+            Sample row:
+                             created_at        id                        text
+        Fri Apr 23 17:44:44 +0000 2021  138565089  RT @jenine1207: @siiyuun...
+        """
+        # define params
+        params = {
+            "q": topic,
+            "tweet_mode": "extended",
+            "lang": "en",
+            "count": "100",
+            "start_time": start_time,
+            "end_time": end_time,
+        }
+        response = requests.get(
+            "https://api.twitter.com/1.1/search/tweets.json?",
+            params=params,
+            headers={"authorization": "Bearer " + self.bearer_token},
+        )
+        tweets = pd.DataFrame()
+        if response.status_code == 200:
+            for tweet in response.json()["statuses"]:
+                row = self.parse_tweet(tweet)
+                tweets = tweets.append(row, ignore_index=True)
+        else:
+            warnings.warn(f"Response code {response.status_code} recieved")
+
+        return tweets
+
+
 class Elijiah:
     """
     Performs sentiment analysis on sentences. Named after the biblical prophet
@@ -293,8 +392,10 @@ class Elijiah:
 
     Attributes
     ----------
-    analyzer : SentimentIntensityAnalyzer
-        VADER analyzer from nltk
+    vader : SentimentIntensityAnalyzer
+        VADER analyzer from nltk for the news
+    sunflair : flair.models.TextClassifier
+        flair model for the tweets
     lemmatizer : WordNetLemmatizer
         lemmatizer from nltk
 
@@ -304,14 +405,16 @@ class Elijiah:
         analyzes a single sentence and returns the score
     normalize_text(sentence)
         normalizes a sentence (removes tags, lemmatizes, etc...)
-    analyze_texts(frame, section, recursive)
+    analyze_news_text(frame, section, recursive)
         takes a dataframe and a section and scores each row. if recursive=True, it will only
         analyze one sentence at time
     """
 
     def __init__(self) -> None:
-        self.analyzer = SentimentIntensityAnalyzer()
+        self.vader = SentimentIntensityAnalyzer()
         self.lemmatizer = WordNetLemmatizer()
+        print("Importing Flair")
+        self.sunflair = flair.models.TextClassifier.load("en-sentiment")
 
     def sentiment_analyzer_sent(self, sentence: str):
         """Analyzes a single sentence and returns the score
@@ -326,7 +429,7 @@ class Elijiah:
         dict
             the scores
         """
-        score = self.analyzer.polarity_scores(sentence)
+        score = self.vader.polarity_scores(sentence)
         print("{:-<40} {}".format(sentence, str(score)))
         return score
 
@@ -345,6 +448,14 @@ class Elijiah:
         """
         subbed = sentence
         clean = re.compile("<.*?>")
+
+        web_address = re.compile(r"(?i)http(s):\/\/[a-z0-9.~_\-\/]+")
+        user = re.compile(r"(?i)@[a-z0-9_]+")
+        whitespace = re.compile(r"\s+")
+
+        subbed = web_address.sub("", subbed)
+        # subbed = whitespace.sub("", subbed)
+        subbed = user.sub("", subbed)
         subbed = re.sub(clean, "", subbed)
         subbed = re.sub("\[+(.*?)chars\]", "", subbed)
         word_list = subbed.split()
@@ -355,7 +466,9 @@ class Elijiah:
         new_sentence = " ".join(lemmatized_words)
         return new_sentence
 
-    def analyze_texts(self, frame: pd.DataFrame, section: str, recursive: bool = False):
+    def analyze_news_text(
+        self, frame: pd.DataFrame, section: str, recursive: bool = False
+    ):
         """Takes a dataframe and a section and scores each row of frame[section]. If recursive=True, it will only
         analyze one sentence at time.
         Example -
@@ -387,20 +500,54 @@ class Elijiah:
             if recursive:
                 for sentence in sent_tokenize(item):
                     sentence = self.normalize_text(sentence)
-                    score = self.analyzer.polarity_scores(sentence)
+                    score = self.vader.polarity_scores(sentence)
                     if score["compound"] != 0:  # remove all zeroes
                         score["sentence"] = sentence
                         score["datetime"] = date
                         scores.append(score)
             else:
                 sentence = self.normalize_text(item)
-                score = self.analyzer.polarity_scores(sentence)
+                score = self.vader.polarity_scores(sentence)
                 if score["compound"] != 0:  # remove all zeroes
                     score["sentence"] = sentence
                     score["datetime"] = date
                     scores.append(score)
         scores = pd.DataFrame(scores)
         return scores
+
+    def analyze_tweet_text(self, tweets: pd.DataFrame):
+        """Takes a dataframe of tweets and analyzes and saves the score for each row
+        ...
+
+        Parameters
+        ----------
+        tweet_frame: pd.DataFrame
+            dataframe containg section
+
+        Returns
+        -------
+        pandas.DataFrame
+            new dataframe of scores
+        """
+        # we will append probability and sentiment preds later
+        probs = []
+        sentiments = []
+
+        # use regex expressions (in clean function) to clean tweets
+        tweets["text"] = tweets["text"].apply(self.normalize_text)
+
+        for tweet in tweets["text"].to_list():
+            # make prediction
+            sentence = flair.data.Sentence(tweet)
+            self.sunflair.predict(sentence)
+            # extract sentiment prediction
+            probs.append(sentence.labels[0].score)  # numerical score 0-1
+            sentiments.append(sentence.labels[0].value)  # 'POSITIVE' or 'NEGATIVE'
+
+        # add probability and sentiment predictions to tweets dataframe
+        tweets["probability"] = probs
+        tweets["sentiment"] = sentiments
+        return tweets
 
 
 class Isaiah:
@@ -423,6 +570,8 @@ class Isaiah:
         ex: {"title": 0.2, "desc": 0.3, "text": 0.5}
     loud : bool
         print unnecessary output (for debugging ususally)
+    bearer_token : str
+        bearer token for the twitter api
 
     Methods
     -------
@@ -442,7 +591,8 @@ class Isaiah:
     def __init__(
         self,
         news_source="google",
-        api_key=None,
+        newsapi_key=None,
+        bearer_token=None,
         splitting=False,
         weights={"title": 0.2, "desc": 0.3, "text": 0.5},
         loud=False,
@@ -452,8 +602,10 @@ class Isaiah:
         ----------
         news_source : str = "google"
             where to get the news from
-        api_key : str = None
+        newsapi_key : str = None
             api key to connect to newsapi.org
+        bearer_token : str  = None
+            bearer token for the twitter api
         spliting : bool = False
             recursively analyze each sentence or not
         weights : dict = {"title": 0.2, "desc": 0.3, "text": 0.5}
@@ -463,9 +615,9 @@ class Isaiah:
         """
         self.sia = Elijiah()
         if news_source == "newsapi":
-            if api_key:
+            if newsapi_key:
                 self.news_source = "newsapi"
-                self.newsparser = NewsAPI(api_key=api_key)
+                self.newsparser = NewsAPI(newsapi_key=newsapi_key)
             else:
                 print(
                     "You requested newsapi but no key was provided. Defaulting to googlenews."
@@ -478,12 +630,13 @@ class Isaiah:
         self.splitting = splitting  # does sia.analyze use recursion to split?
         self.weights = weights
         self.loud = loud
+        self.bearer_token = bearer_token
 
     def get_articles(
         self,
         topics: list,
         window: int = 2,
-        up_to: str = datetime.now().strftime(NEWSAPI_TF),
+        up_to: str = datetime.now().strftime(TWITTER_TF),
     ) -> Dict:
         """Takes a list of topics and returns a dict of topics : pd.dataframe
 
@@ -491,7 +644,7 @@ class Isaiah:
         ----------
         topics : list
             list of terms to search for
-        up_to : str = datetime.now().strftime(NEWSAPI_TF)
+        up_to : str = datetime.now().strftime(TWITTER_TF)
             latest date to get news for
         window : int = 2
             how many days back to search for
@@ -550,19 +703,19 @@ class Isaiah:
 
         """
         title_avg = round(
-            self.sia.analyze_texts(
+            self.sia.analyze_news_text(
                 results_df, "title", recursive=self.splitting
             ).compound.mean(),
             8,
         )
         desc_avg = round(
-            self.sia.analyze_texts(
+            self.sia.analyze_news_text(
                 results_df, "desc", recursive=self.splitting
             ).compound.mean(),
             8,
         )
         text_avg = round(
-            self.sia.analyze_texts(
+            self.sia.analyze_news_text(
                 results_df, "text", recursive=self.splitting
             ).compound.mean(),
             8,
@@ -670,7 +823,7 @@ class Isaiah:
         self,
         topics: list,
         window: int = 2,
-        up_to: str = datetime.now().strftime(NEWSAPI_TF),
+        up_to: str = datetime.now().strftime(TWITTER_TF),
     ):
         """Gets the summary sentiment for each topic
 
@@ -678,7 +831,7 @@ class Isaiah:
         ----------
         topics : list
             list of terms to search for
-        up_to : str = datetime.now().strftime(NEWSAPI_TF)
+        up_to : str = datetime.now().strftime(TWITTER_TF)
             latest date to get news for
         window : int = 2
             how many days back to search for
@@ -696,7 +849,7 @@ class Isaiah:
         self,
         topics: list,
         window: int = 2,
-        up_to: str = datetime.now().strftime(NEWSAPI_TF),
+        up_to: str = datetime.now().strftime(TWITTER_TF),
     ):
         """Gets the WHOLE sentiment for each topic. No or minimal averaging occurs.
 
@@ -704,7 +857,7 @@ class Isaiah:
         ----------
         topics : list
             list of terms to search for
-        up_to : str = datetime.now().strftime(NEWSAPI_TF)
+        up_to : str = datetime.now().strftime(TWITTER_TF)
             latest date to get news for
         window : int = 2
             how many days back to search for
@@ -725,16 +878,47 @@ class Isaiah:
 
         scores = {}
         for topic in articles:
-            titles = self.sia.analyze_texts(
+            titles = self.sia.analyze_news_text(
                 articles[topic], "title", recursive=self.splitting
             )
-            desc = self.sia.analyze_texts(
+            desc = self.sia.analyze_news_text(
                 articles[topic], "desc", recursive=self.splitting
             )
-            text = self.sia.analyze_texts(
+            text = self.sia.analyze_news_text(
                 articles[topic], "text", recursive=self.splitting
             )
             scores[topic] = {"title": titles, "desc": desc, "text": text}
+        return scores
+
+    def twitter_sentiment_summary(
+        self,
+        topics: list,
+        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
+        end_time=datetime.now().strftime(TWITTER_TF),
+    ):
+        """Gets the WHOLE sentiment for each topic. No or minimal averaging occurs.
+
+        Parameters
+        ----------
+        topics : list
+            list of terms to search for
+
+        Returns
+        -------
+
+        """
+        if not self.bearer_token:
+            warnings.warn("No bearer token provided on instantiation.")
+            return {}
+
+        scores = {}
+        twitterparser = TwitterParser(self.bearer_token)
+        for topic in topics:
+            tweets = twitterparser.get_tweets(
+                topic, start_time=start_time, end_time=end_time
+            )
+            scored_frame = self.sia.analyze_tweet_text(tweets)
+            scores[topic] = scored_frame
         return scores
 
 
