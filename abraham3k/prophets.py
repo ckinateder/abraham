@@ -380,8 +380,11 @@ class TwitterParser:
                 desc=f"{topic} tweets",
                 dynamic_ncols=True,
             ):
-                row = self.parse_tweet(tweet)
-                tweets = tweets.append(row, ignore_index=True)
+                try:
+                    row = self.parse_tweet(tweet)
+                    tweets = tweets.append(row, ignore_index=True)
+                except Exception as e:
+                    warnings.warn(f"Error while parsing tweet ... skipping ({e})")
         else:
             warnings.warn(f"Response code {response.status_code} recieved")
 

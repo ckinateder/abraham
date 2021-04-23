@@ -1,0 +1,5 @@
+nltk>=3.6.1
+newspaper3k>=0.2.8
+GoogleNews>=1.5.7
+pandas>=1.2.3
+tqdm>=4.58.0
