@@ -24,7 +24,7 @@ GOOGLENEWS_TF = "%m/%d/%Y"
 TWITTER_TF = "%Y-%m-%dT%H:%M:%SZ"
 
 NEWSAPI_URL = "https://newsapi.org/v2/everything?"
-TWITTER_URL = "https://api.twitter.com/1.1/tweets/search/recent"
+TWITTER_URL = "https://api.twitter.com/2/tweets/search/recent"
 
 
 class NewsAPI:
@@ -328,9 +328,9 @@ class TwitterParser:
             a dict of just the important parts (id, text, created_at)
         """
         data = {
-            "id": tweet["id_str"],
+            "id": tweet["id"],
             "created_at": tweet["created_at"],
-            "text": tweet["full_text"],
+            "text": tweet["text"],
         }
         return data
 
@@ -361,21 +361,25 @@ class TwitterParser:
         """
         # define params
         params = {
-            "q": topic,
-            "tweet_mode": "extended",
-            "lang": "en",
-            "count": "100",
             "start_time": start_time,
             "end_time": end_time,
+            "query": f"({topic}) (lang:en)",
+            "max_results": "100",
+            "tweet.fields": "created_at,lang",
         }
         response = requests.get(
-            "https://api.twitter.com/1.1/search/tweets.json?",
+            TWITTER_URL,
             params=params,
             headers={"authorization": "Bearer " + self.bearer_token},
         )
         tweets = pd.DataFrame()
         if response.status_code == 200:
-            for tweet in response.json()["statuses"]:
+            for tweet in tqdm(
+                response.json()["data"],
+                leave=False,
+                desc=f"{topic} tweets",
+                dynamic_ncols=True,
+            ):
                 row = self.parse_tweet(tweet)
                 tweets = tweets.append(row, ignore_index=True)
         else:
@@ -533,7 +537,6 @@ class Elijiah:
         probs = []
         sentiments = []
 
-        # use regex expressions (in clean function) to clean tweets
         tweets["text"] = tweets["text"].apply(self.normalize_text)
 
         for tweet in tweets["text"].to_list():
