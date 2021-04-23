@@ -890,7 +890,7 @@ class Isaiah:
             scores[topic] = {"title": titles, "desc": desc, "text": text}
         return scores
 
-    def twitter_sentiment_summary(
+    def twitter_sentiment(
         self,
         topics: list,
         start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
@@ -905,7 +905,8 @@ class Isaiah:
 
         Returns
         -------
-
+        scores : dict
+            a dict of dataframe of scores for each tweet
         """
         if not self.bearer_token:
             warnings.warn("No bearer token provided on instantiation.")
@@ -920,6 +921,15 @@ class Isaiah:
             scored_frame = self.sia.analyze_tweet_text(tweets)
             scores[topic] = scored_frame
         return scores
+
+    def twitter_sentiment_summary(
+        self,
+        topics: list,
+        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
+        end_time=datetime.now().strftime(TWITTER_TF),
+    ):
+        # not yet implemented
+        pass
 
 
 if __name__ == "__main__":
