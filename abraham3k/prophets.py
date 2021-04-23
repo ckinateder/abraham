@@ -233,13 +233,13 @@ class Isaiah:
         news_source="google",
         api_key=None,
         splitting=False,
-        weights={"title": 0.1, "desc": 0.1, "text": 0.8},
+        weights={"title": 0.2, "desc": 0.3, "text": 0.5},
         loud=False,
     ) -> None:
         self.sia = Elijiah()
         if news_source == "newsapi":
             if api_key:
-                self.news_source = "google"
+                self.news_source = "newsapi"
                 self.newsparser = NewsAPI(api_key=api_key)
             else:
                 print(
