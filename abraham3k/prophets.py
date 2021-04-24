@@ -602,7 +602,6 @@ class Isaiah:
         news_source="google",
         newsapi_key=None,
         bearer_token=None,
-        splitting=False,
         weights={"title": 0.33, "desc": 0.33, "text": 0.34},
         loud=False,
     ) -> None:
@@ -636,7 +635,6 @@ class Isaiah:
         else:
             self.news_source = "google"
             self.newsparser = GoogleNewsParser()
-        self.splitting = splitting  # does sia.analyze use recursion to split?
         self.weights = weights
         self.loud = loud
         self.bearer_token = bearer_token
@@ -737,12 +735,18 @@ class Isaiah:
 
             # apply weights here
             total = (
-                title[0] * self.weights["title"]
-                + desc[0] * self.weights["desc"]
-                + text[0] * self.weights["text"],
-                title[1] * self.weights["title"]
-                + desc[1] * self.weights["desc"]
-                + text[1] * self.weights["text"],
+                round(
+                    title[0] * self.weights["title"]
+                    + desc[0] * self.weights["desc"]
+                    + text[0] * self.weights["text"],
+                    1,
+                ),
+                round(
+                    title[1] * self.weights["title"]
+                    + desc[1] * self.weights["desc"]
+                    + text[1] * self.weights["text"],
+                    1,
+                ),
             )
             scores[topic] = total
         return scores
