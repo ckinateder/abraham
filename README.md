@@ -20,7 +20,7 @@ $ pip3 install abraham3k
 
 ## Basic Usage
 
-You can run the main function, `news_sentiment` to get the raw scores. This will return a nested dictionary with keys for each topic.
+You can run the function `news_sentiment` to get the raw scores for the news. This will return a nested dictionary with keys for each topic.
 
 ```python
 from abraham3k.prophets import Isaiah
@@ -48,6 +48,20 @@ print(scores['tesla']['text'])
 98  AINQA Health Pte. Ltd. (Headquartered Singapor...  2021-04-22T02:30:00Z     0.641172  POSITIVE
 99  Press Release Nokia publish first-quarter repo...  2021-04-22T05:00:00Z     0.894449  NEGATIVE
 '''
+```
+
+The same way works for the twitter API (see below for integrating twitter usage).
+
+```python
+from abraham3k.prophets import Isaiah
+
+darthvader = Isaiah(news_source="google") 
+
+scores = darthvader.twitter_sentiment(["amd", 
+                                    "microsoft", 
+                                    "tesla", 
+                                    "theranos"]
+                                    )
 ```
 
 ## Changing News Sources

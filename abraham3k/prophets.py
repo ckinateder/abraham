@@ -603,7 +603,7 @@ class Isaiah:
         newsapi_key=None,
         bearer_token=None,
         splitting=False,
-        weights={"title": 0.2, "desc": 0.3, "text": 0.5},
+        weights={"title": 0.33, "desc": 0.33, "text": 0.34},
         loud=False,
     ) -> None:
         """
@@ -617,7 +617,7 @@ class Isaiah:
             bearer token for the twitter api
         spliting : bool = False
             recursively analyze each sentence or not
-        weights : dict = {"title": 0.2, "desc": 0.3, "text": 0.5}
+        weights : dict = {"title": 0.33, "desc": 0.33, "text": 0.34}
             how to weight the title, desc, and text attributes
         loud : dict = False
             print unnecessary output (for debugging ususally)
@@ -678,157 +678,7 @@ class Isaiah:
             )
         return topic_results
 
-    def compute_total_avg(self, results_df: pd.DataFrame, meta: dict):
-        """Computes avg scores for each row and then column of an entire dataframe
-
-        Parameters
-        ----------
-        results_df: pd.DataFrame
-            dataframe of results with columns ['title', 'author', 'source',
-                            'desc', 'text', 'datetime', 'url', 'urlToImage']
-        meta: dict
-            any additional information to return with the scores.
-            usually {"window": window, "up_to": up_to}
-
-        Returns
-        -------
-        returned_dict : dict
-            a dict of the avg scores and meta information
-            ex:
-            {
-                'avg': -0.06751676,
-                'desc_avg': -0.07466768,
-                'info': {
-                    'news_source': 'newsapi',
-                    'splitting': True,
-                    'up_to': '2021-4-20',
-                    'weights': {'desc': 0.3, 'text': 0.5, 'title': 0.2},
-                    'window': 2
-                        },
-                'nice': 'negative',
-                'text_avg': -0.04153505,
-                'title_avg': -0.12174464
-            }
-
-        """
-        title_avg = round(
-            self.sia.analyze_news_text(
-                results_df, "title", recursive=self.splitting
-            ).compound.mean(),
-            8,
-        )
-        desc_avg = round(
-            self.sia.analyze_news_text(
-                results_df, "desc", recursive=self.splitting
-            ).compound.mean(),
-            8,
-        )
-        text_avg = round(
-            self.sia.analyze_news_text(
-                results_df, "text", recursive=self.splitting
-            ).compound.mean(),
-            8,
-        )
-
-        if self.weights["title"] + self.weights["text"] + self.weights["desc"] != 1:
-            wstr = f"WARNING: Sum of custom weights != 1 ({self.weights})"
-            warnings.warn(wstr)
-
-        total_avg = round(
-            title_avg * self.weights["title"]
-            + desc_avg * self.weights["desc"]
-            + text_avg * self.weights["text"],
-            8,
-        )
-        # classify
-        if total_avg >= 0.05:
-            classified = "positive"
-        elif total_avg <= -0.05:
-            classified = "negative"
-        else:
-            classified = "neutral"
-
-        if self.loud:
-            print(f"Title avg: {round(title_avg*100,2)}% (compound={title_avg:.8f})")
-            print(f"Desc avg: {round(desc_avg*100,2)}% (compound={desc_avg:.8f})")
-            print(f"Text avg: {round(text_avg*100,2)}% (compound={text_avg:.8f})")
-            print(
-                f"[Total avg: {round(total_avg*100,2)}% (compound={total_avg:.8f}) <{classified}>]"
-            )
-
-        meta["weights"] = self.weights
-        meta["news_source"] = self.news_source
-        meta["splitting"] = self.splitting
-
-        returned_dict = {
-            "avg": total_avg,
-            "title_avg": title_avg,
-            "desc_avg": desc_avg,
-            "text_avg": text_avg,
-            "info": meta,
-            "nice": classified,
-        }
-        return returned_dict
-
-    def score_all(self, topic_results: dict, meta: dict):
-        """Takes care of scoring the entire dataframe for each topic
-
-        Paramaters
-        ----------
-        topic_results: dict
-            in format {topic: <pd.DataFrame>, topic: <pd.DataFrame>, ... } with
-            dataframe being of the results with columns ['title', 'author',
-                'source', 'desc', 'text', 'datetime', 'url', 'urlToImage']
-            ex:
-            {
-                'coinbase': <pd.DataFrame>,
-                'bitcoin': <pd.DataFrame>,
-                ...
-            }
-        meta: dict
-            any additional information to return with the scores.
-            usually {"window": window, "up_to": up_to}
-
-        Returns
-        -------
-        scores : dict
-            a dict of dicts arranged as {topic: scores}
-            ex:
-            {
-            'amd': {'avg': 0.2880456,
-                    'desc_avg': 0.31842738,
-                    'info': {
-                        'news_source': 'newsapi',
-                        'splitting': True,
-                        'up_to': '2021-4-20',
-                        'weights': {'desc': 0.3, 'text': 0.5, 'title': 0.2},
-                        'window': 2
-                            },
-                    'nice': 'positive',
-                    'text_avg': 0.2613019,
-                    'title_avg': 0.3093322},
-            'tesla': {'avg': -0.06751676,
-                    'desc_avg': -0.07466768,
-                    'info': {
-                        'news_source': 'newsapi',
-                        'splitting': True,
-                        'up_to': '2021-4-20',
-                        'weights': {'desc': 0.3, 'text': 0.5, 'title': 0.2},
-                        'window': 2
-                            },
-                    'nice': 'negative',
-                    'text_avg': -0.04153505,
-                    'title_avg': -0.12174464},
-            }
-
-        """
-        scores = {}
-        for topic in topic_results:
-            classification = self.compute_total_avg(topic_results[topic], meta=meta)
-            scores[topic] = classification
-        return scores
-
-    def ___news_sentiment_summary(
+    def news_summary(
         self,
         topics: list,
         window: int = 2,
@@ -848,10 +698,91 @@ class Isaiah:
         Returns
         -------
         scores : dict
-            a dict of dicts arranged as {topic: scores} (see score_all for a sample return)
+            a dict of dicts arranged as {topic: scores},
+            where scores is a tuple (positive count, negative cound)
         """
-        articles = self.get_articles(topics, window=window, up_to=up_to)
-        scores = self.score_all(articles, meta={"window": window, "up_to": up_to})
+        scores = {}
+        raws = self.news_sentiment(topics, window=window, up_to=up_to)
+        for topic in raws:
+            title = (
+                raws[topic]["title"]
+                .loc[raws[topic]["title"]["sentiment"] == "POSITIVE"]
+                .dropna()
+                .shape[0],
+                raws[topic]["title"]
+                .loc[raws[topic]["title"]["sentiment"] == "NEGATIVE"]
+                .dropna()
+                .shape[0],
+            )
+            desc = (
+                raws[topic]["desc"]
+                .loc[raws[topic]["desc"]["sentiment"] == "POSITIVE"]
+                .dropna()
+                .shape[0],
+                raws[topic]["desc"]
+                .loc[raws[topic]["desc"]["sentiment"] == "NEGATIVE"]
+                .dropna()
+                .shape[0],
+            )
+            text = (
+                raws[topic]["text"]
+                .loc[raws[topic]["text"]["sentiment"] == "POSITIVE"]
+                .dropna()
+                .shape[0],
+                raws[topic]["text"]
+                .loc[raws[topic]["text"]["sentiment"] == "NEGATIVE"]
+                .dropna()
+                .shape[0],
+            )
+
+            # apply weights here
+            total = (
+                title[0] * self.weights["title"]
+                + desc[0] * self.weights["desc"]
+                + text[0] * self.weights["text"],
+                title[1] * self.weights["title"]
+                + desc[1] * self.weights["desc"]
+                + text[1] * self.weights["text"],
+            )
+            scores[topic] = total
+        return scores
+
+    def twitter_summary(
+        self,
+        topics: list,
+        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
+        end_time=datetime.now().strftime(TWITTER_TF),
+    ):
+        """Gets the summary sentiment for each topic from twitter
+
+        Parameters
+        ----------
+        topics : list
+            list of terms to search for
+        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
+        end_time : str = datetime.now().strftime(TWITTER_TF)
+            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
+
+        Returns
+        -------
+        scores : dict
+            a dict of dicts arranged as {topic: scores},
+            where scores is a tuple (positive count, negative cound)
+        """
+        scores = {}
+        raws = self.twitter_sentiment(topics, start_time=start_time, end_time=end_time)
+        for topic in raws:
+            scores[topic] = (
+                raws[topic]
+                .loc[raws[topic]["sentiment"] == "POSITIVE"]
+                .dropna()
+                .shape[0],
+                raws[topic]
+                .loc[raws[topic]["sentiment"] == "NEGATIVE"]
+                .dropna()
+                .shape[0],
+            )
         return scores
 
     def news_sentiment(
@@ -910,6 +841,10 @@ class Isaiah:
         ----------
         topics : list
             list of terms to search for
+        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
+        end_time : str = datetime.now().strftime(TWITTER_TF)
+            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
 
         Returns
         -------
@@ -929,15 +864,6 @@ class Isaiah:
             scored_frame = self.sia.analyze_flair_text(tweets, "text")
             scores[topic] = scored_frame
         return scores
-
-    def twitter_sentiment_summary(
-        self,
-        topics: list,
-        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
-        end_time=datetime.now().strftime(TWITTER_TF),
-    ):
-        # not yet implemented
-        pass
 
 
 if __name__ == "__main__":
