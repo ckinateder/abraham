@@ -339,6 +339,7 @@ class TwitterParser:
     def get_tweets(
         self,
         topic,
+        pages=1,
         start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
         end_time=datetime.now().strftime(TWITTER_TF),
     ):  # how many days back to go
@@ -369,29 +370,37 @@ class TwitterParser:
             "max_results": "100",
             "tweet.fields": "created_at,lang",
         }
-        response = requests.get(
-            TWITTER_URL,
-            params=params,
-            headers={"authorization": "Bearer " + self.bearer_token},
-        )
-        tweets = pd.DataFrame()
-        if response.status_code == 200:
-            for tweet in tqdm(
-                response.json()["data"],
-                leave=False,
-                desc=f"{topic} tweets",
-                dynamic_ncols=True,
-            ):
-                try:
-                    row = self.parse_tweet(tweet)
-                    tweets = tweets.append(row, ignore_index=True)
-                except Exception as e:
-                    warnings.warn(f"Error while parsing tweet ... skipping ({e})")
-        else:
-            warnings.warn(
-                f"Response code {response.status_code} recieved from twitter. Did you authenticate correctly?"
-            )
 
+        tweets = pd.DataFrame()
+        for page in range(pages):
+            try:
+                response = requests.get(
+                    TWITTER_URL,
+                    params=params,
+                    headers={"authorization": "Bearer " + self.bearer_token},
+                )
+                jresponse = response.json()
+                if response.status_code == 200:
+                    for tweet in tqdm(
+                        jresponse["data"],
+                        leave=False,
+                        desc=f"{topic} tweets",
+                        dynamic_ncols=True,
+                    ):
+                        try:
+                            row = self.parse_tweet(tweet)
+                            tweets = tweets.append(row, ignore_index=True)
+                        except Exception as e:
+                            warnings.warn(
+                                f"Error while parsing tweet ... skipping ({e})"
+                            )
+                    params["next_token"] = jresponse["meta"]["next_token"]
+                else:
+                    warnings.warn(
+                        f"Response code {response.status_code} recieved from twitter. Did you authenticate correctly?"
+                    )
+            except Exception as e:
+                warnings.warn(f"Error while getting tweets ({e})")
         return tweets
 
 
@@ -777,6 +786,7 @@ class Isaiah:
     def twitter_summary(
         self,
         topics: list,
+        size: int = 100,
         start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
         end_time=datetime.now().strftime(TWITTER_TF),
     ):
@@ -798,7 +808,9 @@ class Isaiah:
             where scores is a tuple (positive count, negative cound)
         """
         scores = {}
-        raws = self.twitter_sentiment(topics, start_time=start_time, end_time=end_time)
+        raws = self.twitter_sentiment(
+            topics, size=size, start_time=start_time, end_time=end_time
+        )
         for topic in raws:
             scores[topic] = (
                 round(
@@ -867,6 +879,7 @@ class Isaiah:
     def twitter_sentiment(
         self,
         topics: list,
+        size=100,
         start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
         end_time=datetime.now().strftime(TWITTER_TF),
     ):
@@ -876,6 +889,8 @@ class Isaiah:
         ----------
         topics : list
             list of terms to search for
+        size : int = 100
+            roughly how many tweets to get
         start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
         end_time : str = datetime.now().strftime(TWITTER_TF)
@@ -894,7 +909,7 @@ class Isaiah:
         twitterparser = TwitterParser(self.bearer_token)
         for topic in topics:
             tweets = twitterparser.get_tweets(
-                topic, start_time=start_time, end_time=end_time
+                topic, pages=int(size / 100), start_time=start_time, end_time=end_time
             )
             scored_frame = self.sia.analyze_flair_text(tweets, "text")
             scores[topic] = scored_frame
