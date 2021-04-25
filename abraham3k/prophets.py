@@ -70,8 +70,8 @@ class NewsAPI:
         pagesize: int = 100,
         page: int = 1,
         language: str = "en",
-        from_date: str = (datetime.now() - timedelta(7)).strftime(TWITTER_TF),
-        to_date: str = datetime.now().strftime(TWITTER_TF),
+        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
+        end_time=datetime.now().strftime(TWITTER_TF),
     ):
         """Search the news for a search term.
 
@@ -87,10 +87,10 @@ class NewsAPI:
             page to read from
         language: str = "en", optional
             language to search in
-        from_date: str = (datetime.now() - timedelta(7)).strftime(TWITTER_TF), optional
-            farthest day back to go when searching, in "%Y-%m-%d" format
-        to_date: str = datetime.now().strftime(TWITTER_TF), optional
-            latest date to go up to when searching, in "%Y-%m-%d" format
+        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
+        end_time : str = datetime.now().strftime(TWITTER_TF)
+            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
 
         Returns
         -------
@@ -103,8 +103,8 @@ class NewsAPI:
             "apiKey": self.newsapi_key,
             "language": language,
             "page": page,
-            "from": from_date,
-            "to": to_date,
+            "from": start_time,
+            "to": end_time,
         }
         response = requests.get(url, params=params)
         json_response = response.json()["articles"]
@@ -155,7 +155,10 @@ class NewsAPI:
         return pd.DataFrame(cleaned_dict)
 
     def get_articles(
-        self, searchfor, up_to=datetime.now().strftime(TWITTER_TF), window=1
+        self,
+        searchfor,
+        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
+        end_time=datetime.now().strftime(TWITTER_TF),
     ):
         """Gets articles for a single search term
 
@@ -174,8 +177,7 @@ class NewsAPI:
             a dataframe of the results with columns ['title', 'author', 'source', 'desc',
                                                     'text', 'datetime', 'url', 'urlToImage']
         """
-        period = (datetime.now() - timedelta(window)).strftime(TWITTER_TF)
-        jresponse = self.fetch_json(searchfor, from_date=period, to_date=up_to)
+        jresponse = self.fetch_json(searchfor, start_time=start_time, end_time=end_time)
         cleaned = self.clean_response(jresponse)
         cleaned_df = self.cleaned_to_df(cleaned)
         return cleaned_df
@@ -235,8 +237,8 @@ class GoogleNewsParser:
     def get_articles(
         self,
         search_term,
-        up_to=datetime.now().strftime(TWITTER_TF),
-        window=2,  # how many days back to go
+        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
+        end_time=datetime.now().strftime(TWITTER_TF),
     ):
         """Gets articles for a single search term
 
@@ -244,10 +246,10 @@ class GoogleNewsParser:
         ----------
         searchfor: str
             term to search for
-        up_to : str = datetime.now().strftime(TWITTER_TF)
-            latest date to get news for
-        window : int = 1
-            how many days back to search for
+        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
+        end_time : str = datetime.now().strftime(TWITTER_TF)
+            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
 
         Returns
         -------
@@ -257,9 +259,9 @@ class GoogleNewsParser:
         """
         start = time.time()
         # use settimerange instead
-        end_date = datetime.strptime(up_to, TWITTER_TF).strftime(GOOGLENEWS_TF)
-        start_date = (datetime.now() - timedelta(window)).strftime(GOOGLENEWS_TF)
-        self.googlenews.set_time_range(start_date, end_date)  # set the range
+        end_date = datetime.strptime(end_time, TWITTER_TF).strftime(GOOGLENEWS_TF)
+        start_date = datetime.strptime(start_time, TWITTER_TF).strftime(GOOGLENEWS_TF)
+        self.googlenews.set_time_range(start_date, end_date)
         self.googlenews.get_news(search_term)  # get the news
         results = self.googlenews.results()  # get the results
 
@@ -386,7 +388,9 @@ class TwitterParser:
                 except Exception as e:
                     warnings.warn(f"Error while parsing tweet ... skipping ({e})")
         else:
-            warnings.warn(f"Response code {response.status_code} recieved")
+            warnings.warn(
+                f"Response code {response.status_code} recieved from twitter. Did you authenticate correctly?"
+            )
 
         return tweets
 
@@ -649,8 +653,8 @@ class Isaiah:
     def get_articles(
         self,
         topics: list,
-        window: int = 2,
-        up_to: str = datetime.now().strftime(TWITTER_TF),
+        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
+        end_time=datetime.now().strftime(TWITTER_TF),
     ) -> Dict:
         """Takes a list of topics and returns a dict of topics : pd.dataframe
 
@@ -658,10 +662,10 @@ class Isaiah:
         ----------
         topics : list
             list of terms to search for
-        up_to : str = datetime.now().strftime(TWITTER_TF)
-            latest date to get news for
-        window : int = 2
-            how many days back to search for
+        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
+        end_time : str = datetime.now().strftime(TWITTER_TF)
+            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
 
         Returns
         -------
@@ -679,15 +683,15 @@ class Isaiah:
         topic_results = {}
         for topic in topics:
             topic_results[topic] = self.newsparser.get_articles(
-                topic, window=window, up_to=up_to
+                topic, start_time=start_time, end_time=end_time
             )
         return topic_results
 
     def news_summary(
         self,
         topics: list,
-        window: int = 2,
-        up_to: str = datetime.now().strftime(TWITTER_TF),
+        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
+        end_time=datetime.now().strftime(TWITTER_TF),
     ):
         """Gets the summary sentiment for each topic
 
@@ -707,7 +711,7 @@ class Isaiah:
             where scores is a tuple (positive count, negative cound)
         """
         scores = {}
-        raws = self.news_sentiment(topics, window=window, up_to=up_to)
+        raws = self.news_sentiment(topics, start_time=start_time, end_time=end_time)
         for topic in raws:
             title = (
                 raws[topic]["title"]
@@ -797,24 +801,30 @@ class Isaiah:
         raws = self.twitter_sentiment(topics, start_time=start_time, end_time=end_time)
         for topic in raws:
             scores[topic] = (
-                raws[topic]
-                .loc[raws[topic]["sentiment"] == "POSITIVE"]
-                .dropna()
-                .shape[0]
-                * (100 / raws[topic].shape[0]),
-                raws[topic]
-                .loc[raws[topic]["sentiment"] == "NEGATIVE"]
-                .dropna()
-                .shape[0]
-                * (100 / raws[topic].shape[0]),
+                round(
+                    raws[topic]
+                    .loc[raws[topic]["sentiment"] == "POSITIVE"]
+                    .dropna()
+                    .shape[0]
+                    * (100 / raws[topic].shape[0]),
+                    1,
+                ),
+                round(
+                    raws[topic]
+                    .loc[raws[topic]["sentiment"] == "NEGATIVE"]
+                    .dropna()
+                    .shape[0]
+                    * (100 / raws[topic].shape[0]),
+                    1,
+                ),
             )
         return scores
 
     def news_sentiment(
         self,
         topics: list,
-        window: int = 2,
-        up_to: str = datetime.now().strftime(TWITTER_TF),
+        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
+        end_time=datetime.now().strftime(TWITTER_TF),
     ):
         """Gets the WHOLE sentiment for each topic. No or minimal averaging occurs.
 
@@ -822,10 +832,10 @@ class Isaiah:
         ----------
         topics : list
             list of terms to search for
-        up_to : str = datetime.now().strftime(TWITTER_TF)
-            latest date to get news for
-        window : int = 2
-            how many days back to search for
+        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
+        end_time : str = datetime.now().strftime(TWITTER_TF)
+            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
 
         Returns
         -------
@@ -839,7 +849,7 @@ class Isaiah:
           0.173  0.827  0.000   -0.5859  Tesla working vehicle ...  2021-04-20T09:31:36Z
         """
 
-        articles = self.get_articles(topics, window=window, up_to=up_to)
+        articles = self.get_articles(topics, start_time=start_time, end_time=end_time)
         scores = {}
         for topic in articles:
             titles = self.sia.analyze_flair_text(
@@ -889,20 +899,3 @@ class Isaiah:
             scored_frame = self.sia.analyze_flair_text(tweets, "text")
             scores[topic] = scored_frame
         return scores
-
-
-if __name__ == "__main__":
-    darthvader = Isaiah(
-        news_source="newsapi",
-        splitting=False,
-        weights={"title": 0.1, "desc": 0.1, "text": 0.8},
-    )  # splitting means that it recursively splits a large text into sentences and analyzes each individually
-
-    args = [sys.argv[1:]] if sys.argv[1:] else ["tesla"]  # default args
-
-    scores = darthvader.news_sentiment(
-        *args,
-        window=3,  # how many days back from up_to to get news from
-    )  # latest date to get news from
-
-    print(scores)
