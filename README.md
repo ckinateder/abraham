@@ -127,162 +127,161 @@ Pull requests welcome!
 View the full docstrings here.
 
 ```
-Help on module abraham3k.prophets in abraham3k:
-    class Isaiah(builtins.object)
-     |  Isaiah(news_source='google', newsapi_key=None, bearer_token=None, weights={'title': 0.33, 'desc': 0.33, 'text': 0.34}, loud=False) -> None
-     |  
-     |  Performs sentiment analysis on a search term by taking care of gathering
-     |  all the articles and scoring. Named after the biblical prophet
-     |  
-     |  ...
-     |  
-     |  Attributes
-     |  ----------
-     |  sia : Elijiah
-     |      Elijiah analyzer
-     |  news_source : str
-     |      where to get the news from (google or newsapi)
-     |  splitting : bool
-     |      whether or not to recursively analyze each sentence
-     |  weights : dict
-     |      how to weight the title, desc, and text attributes
-     |      ex: {"title": 0.2, "desc": 0.3, "text": 0.5}
-     |  loud : bool
-     |      print unnecessary output (for debugging ususally)
-     |  bearer_token : str
-     |      bearer token for the twitter api
-     |  
-     |  Methods
-     |  -------
-     |  get_articles(search_for, up_to=today, window=2)
-     |      gets articles for a single search term
-     |  compute_total_avg(results_df, meta)
-     |      computes avg scores for each row and column of an entire dataframe
-     |  score_all(topic_results, meta)
-     |      takes care of scoring the entire dataframe for each topic
-     |  news_sentiment_summary(topics, window=2, up_to=today)
-     |      takes a list of topics and computes the avg scores for each
-     |  news_sentiment(topics, window=2, up_to=today)
-     |      takes a list of topics and gets the raw scores for each
-     |      (per topic per text type per row)
-     |  
-     |  Methods defined here:
-     |  
-     |  __init__(self, news_source='google', newsapi_key=None, bearer_token=None, weights={'title': 0.33, 'desc': 0.33, 'text': 0.34}, loud=False) -> None
-     |      Parameters
-     |      ----------
-     |      news_source : str = "google"
-     |          where to get the news from
-     |      newsapi_key : str = None
-     |          api key to connect to newsapi.org
-     |      bearer_token : str  = None
-     |          bearer token for the twitter api
-     |      spliting : bool = False
-     |          recursively analyze each sentence or not
-     |      weights : dict = {"title": 0.33, "desc": 0.33, "text": 0.34}
-     |          how to weight the title, desc, and text attributes
-     |      loud : dict = False
-     |          print unnecessary output (for debugging ususally)
-     |  
-     |  get_articles(self, topics: list, window: int = 2, up_to: str = '2021-04-23T21:54:23Z') -> Dict
-     |      Takes a list of topics and returns a dict of topics : pd.dataframe
-     |      
-     |      Parameters
-     |      ----------
-     |      topics : list
-     |          list of terms to search for
-     |      up_to : str = datetime.now().strftime(TWITTER_TF)
-     |          latest date to get news for
-     |      window : int = 2
-     |          how many days back to search for
-     |      
-     |      Returns
-     |      -------
-     |      dict
-     |          in format {topic: <pd.DataFrame>, topic: <pd.DataFrame>, ... } with
-     |          dataframe being of the results with columns ['title', 'author',
-     |              'source', 'desc', 'text', 'datetime', 'url', 'urlToImage']
-     |          ex:
-     |          {
-     |              'coinbase': <pd.DataFrame>,
-     |              'bitcoin': <pd.DataFrame>,
-     |              ...
-     |          }
-     |  
-     |  news_sentiment(self, topics: list, window: int = 2, up_to: str = '2021-04-23T21:54:23Z')
-     |      Gets the WHOLE sentiment for each topic. No or minimal averaging occurs.
-     |      
-     |      Parameters
-     |      ----------
-     |      topics : list
-     |          list of terms to search for
-     |      up_to : str = datetime.now().strftime(TWITTER_TF)
-     |          latest date to get news for
-     |      window : int = 2
-     |          how many days back to search for
-     |      
-     |      Returns
-     |      -------
-     |      scores : dict
-     |          returns a 2d dict, set up like so:
-     |          {
-     |              topic: {"title": titles, "desc": desc, "text": text}
-     |          }
-     |          where title, desc, and text are dataframes and each row looks like this:
-     |          neg    neu    pos  compound                   sentence              datetime
-     |        0.173  0.827  0.000   -0.5859  Tesla working vehicle ...  2021-04-20T09:31:36Z
-     |  
-     |  news_summary(self, topics: list, window: int = 2, up_to: str = '2021-04-23T21:54:23Z')
-     |      Gets the summary sentiment for each topic
-     |      
-     |      Parameters
-     |      ----------
-     |      topics : list
-     |          list of terms to search for
-     |      up_to : str = datetime.now().strftime(TWITTER_TF)
-     |          latest date to get news for
-     |      window : int = 2
-     |          how many days back to search for
-     |      
-     |      Returns
-     |      -------
-     |      scores : dict
-     |          a dict of dicts arranged as {topic: scores},
-     |          where scores is a tuple (positive count, negative cound)
-     |  
-     |  twitter_sentiment(self, topics: list, start_time='2021-04-21T21:54:23Z', end_time='2021-04-23T21:54:23Z')
-     |      Gets the WHOLE sentiment for each topic. No or minimal averaging occurs.
-     |      
-     |      Parameters
-     |      ----------
-     |      topics : list
-     |          list of terms to search for
-     |      start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
-     |          how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
-     |      end_time : str = datetime.now().strftime(TWITTER_TF)
-     |          how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
-     |      
-     |      Returns
-     |      -------
-     |      scores : dict
-     |          a dict of dataframe of scores for each tweet
-     |  
-     |  twitter_summary(self, topics: list, start_time='2021-04-21T21:54:23Z', end_time='2021-04-23T21:54:23Z')
-     |      Gets the summary sentiment for each topic from twitter
-     |      
-     |      Parameters
-     |      ----------
-     |      topics : list
-     |          list of terms to search for
-     |      start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
-     |          how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
-     |      end_time : str = datetime.now().strftime(TWITTER_TF)
-     |          how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
-     |      
-     |      Returns
-     |      -------
-     |      scores : dict
-     |          a dict of dicts arranged as {topic: scores},
-     |          where scores is a tuple (positive count, negative cound)
+class Isaiah(builtins.object)
+|  Isaiah(news_source='google', newsapi_key=None, bearer_token=None, weights={'title': 0.33, 'desc': 0.33, 'text': 0.34}, loud=False) -> None
+|  
+|  Performs sentiment analysis on a search term by taking care of gathering
+|  all the articles and scoring. Named after the biblical prophet
+|  
+|  ...
+|  
+|  Attributes
+|  ----------
+|  sia : Elijiah
+|      Elijiah analyzer
+|  news_source : str
+|      where to get the news from (google or newsapi)
+|  splitting : bool
+|      whether or not to recursively analyze each sentence
+|  weights : dict
+|      how to weight the title, desc, and text attributes
+|      ex: {"title": 0.2, "desc": 0.3, "text": 0.5}
+|  loud : bool
+|      print unnecessary output (for debugging ususally)
+|  bearer_token : str
+|      bearer token for the twitter api
+|  
+|  Methods
+|  -------
+|  get_articles(search_for, up_to=today, window=2)
+|      gets articles for a single search term
+|  compute_total_avg(results_df, meta)
+|      computes avg scores for each row and column of an entire dataframe
+|  score_all(topic_results, meta)
+|      takes care of scoring the entire dataframe for each topic
+|  news_sentiment_summary(topics, window=2, up_to=today)
+|      takes a list of topics and computes the avg scores for each
+|  news_sentiment(topics, window=2, up_to=today)
+|      takes a list of topics and gets the raw scores for each
+|      (per topic per text type per row)
+|  
+|  Methods defined here:
+|  
+|  __init__(self, news_source='google', newsapi_key=None, bearer_token=None, weights={'title': 0.33, 'desc': 0.33, 'text': 0.34}, loud=False) -> None
+|      Parameters
+|      ----------
+|      news_source : str = "google"
+|          where to get the news from
+|      newsapi_key : str = None
+|          api key to connect to newsapi.org
+|      bearer_token : str  = None
+|          bearer token for the twitter api
+|      spliting : bool = False
+|          recursively analyze each sentence or not
+|      weights : dict = {"title": 0.33, "desc": 0.33, "text": 0.34}
+|          how to weight the title, desc, and text attributes
+|      loud : dict = False
+|          print unnecessary output (for debugging ususally)
+|  
+|  get_articles(self, topics: list, window: int = 2, up_to: str = '2021-04-23T21:54:23Z') -> Dict
+|      Takes a list of topics and returns a dict of topics : pd.dataframe
+|      
+|      Parameters
+|      ----------
+|      topics : list
+|          list of terms to search for
+|      up_to : str = datetime.now().strftime(TWITTER_TF)
+|          latest date to get news for
+|      window : int = 2
+|          how many days back to search for
+|      
+|      Returns
+|      -------
+|      dict
+|          in format {topic: <pd.DataFrame>, topic: <pd.DataFrame>, ... } with
+|          dataframe being of the results with columns ['title', 'author',
+|              'source', 'desc', 'text', 'datetime', 'url', 'urlToImage']
+|          ex:
+|          {
+|              'coinbase': <pd.DataFrame>,
+|              'bitcoin': <pd.DataFrame>,
+|              ...
+|          }
+|  
+|  news_sentiment(self, topics: list, window: int = 2, up_to: str = '2021-04-23T21:54:23Z')
+|      Gets the WHOLE sentiment for each topic. No or minimal averaging occurs.
+|      
+|      Parameters
+|      ----------
+|      topics : list
+|          list of terms to search for
+|      up_to : str = datetime.now().strftime(TWITTER_TF)
+|          latest date to get news for
+|      window : int = 2
+|          how many days back to search for
+|      
+|      Returns
+|      -------
+|      scores : dict
+|          returns a 2d dict, set up like so:
+|          {
+|              topic: {"title": titles, "desc": desc, "text": text}
+|          }
+|          where title, desc, and text are dataframes and each row looks like this:
+|          neg    neu    pos  compound                   sentence              datetime
+|        0.173  0.827  0.000   -0.5859  Tesla working vehicle ...  2021-04-20T09:31:36Z
+|  
+|  news_summary(self, topics: list, window: int = 2, up_to: str = '2021-04-23T21:54:23Z')
+|      Gets the summary sentiment for each topic
+|      
+|      Parameters
+|      ----------
+|      topics : list
+|          list of terms to search for
+|      up_to : str = datetime.now().strftime(TWITTER_TF)
+|          latest date to get news for
+|      window : int = 2
+|          how many days back to search for
+|      
+|      Returns
+|      -------
+|      scores : dict
+|          a dict of dicts arranged as {topic: scores},
+|          where scores is a tuple (positive count, negative cound)
+|  
+|  twitter_sentiment(self, topics: list, start_time='2021-04-21T21:54:23Z', end_time='2021-04-23T21:54:23Z')
+|      Gets the WHOLE sentiment for each topic. No or minimal averaging occurs.
+|      
+|      Parameters
+|      ----------
+|      topics : list
+|          list of terms to search for
+|      start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+|          how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
+|      end_time : str = datetime.now().strftime(TWITTER_TF)
+|          how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
+|      
+|      Returns
+|      -------
+|      scores : dict
+|          a dict of dataframe of scores for each tweet
+|  
+|  twitter_summary(self, topics: list, start_time='2021-04-21T21:54:23Z', end_time='2021-04-23T21:54:23Z')
+|      Gets the summary sentiment for each topic from twitter
+|      
+|      Parameters
+|      ----------
+|      topics : list
+|          list of terms to search for
+|      start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+|          how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
+|      end_time : str = datetime.now().strftime(TWITTER_TF)
+|          how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
+|      
+|      Returns
+|      -------
+|      scores : dict
+|          a dict of dicts arranged as {topic: scores},
+|          where scores is a tuple (positive count, negative cound)
 
 ```
