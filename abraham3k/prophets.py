@@ -546,16 +546,23 @@ class Elijiah:
         for tweet in tqdm(
             newframe[section].to_list(), desc=section, leave=False, dynamic_ncols=True
         ):
-            # make prediction
-            sentence = flair.data.Sentence(tweet)
-            self.sunflair.predict(sentence)
-            # extract sentiment prediction
-            probs.append(sentence.labels[0].score)  # numerical score 0-1
-            sentiments.append(sentence.labels[0].value)  # 'POSITIVE' or 'NEGATIVE'
+            # if tweet empty
+            if len(tweet) == 0:
+                probs.append("NEUTRAL")
+                sentiments.append("NEUTRAL")
+            else:
+                # make prediction
+                sentence = flair.data.Sentence(tweet)
+                self.sunflair.predict(sentence)
+                # extract sentiment prediction
+                probs.append(sentence.labels[0].score)  # numerical score 0-1
+                sentiments.append(sentence.labels[0].value)  # 'POSITIVE' or 'NEGATIVE'
+
         # add probability and sentiment predictions to tweets dataframe
         newframe["probability"] = probs
         newframe["sentiment"] = sentiments
-
+        newframe = newframe[newframe.probability != "NEUTRAL"]
+        newframe = newframe[newframe.sentiment != "NEUTRAL"]
         return newframe
 
 
@@ -736,15 +743,27 @@ class Isaiah:
             # apply weights here
             total = (
                 round(
-                    title[0] * self.weights["title"]
-                    + desc[0] * self.weights["desc"]
-                    + text[0] * self.weights["text"],
+                    title[0]
+                    * self.weights["title"]
+                    * (100 / raws[topic]["title"].shape[0])
+                    + desc[0]
+                    * self.weights["desc"]
+                    * (100 / raws[topic]["desc"].shape[0])
+                    + text[0]
+                    * self.weights["text"]
+                    * (100 / raws[topic]["text"].shape[0]),
                     1,
                 ),
                 round(
-                    title[1] * self.weights["title"]
-                    + desc[1] * self.weights["desc"]
-                    + text[1] * self.weights["text"],
+                    title[1]
+                    * self.weights["title"]
+                    * (100 / raws[topic]["title"].shape[0])
+                    + desc[1]
+                    * self.weights["desc"]
+                    * (100 / raws[topic]["desc"].shape[0])
+                    + text[1]
+                    * self.weights["text"]
+                    * (100 / raws[topic]["text"].shape[0]),
                     1,
                 ),
             )
@@ -781,11 +800,13 @@ class Isaiah:
                 raws[topic]
                 .loc[raws[topic]["sentiment"] == "POSITIVE"]
                 .dropna()
-                .shape[0],
+                .shape[0]
+                * (100 / raws[topic].shape[0]),
                 raws[topic]
                 .loc[raws[topic]["sentiment"] == "NEGATIVE"]
                 .dropna()
-                .shape[0],
+                .shape[0]
+                * (100 / raws[topic].shape[0]),
             )
         return scores
 
