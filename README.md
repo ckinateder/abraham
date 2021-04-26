@@ -102,6 +102,21 @@ scores = darthvader.twitter_sentiment(["amd",
                                     )
 ```
 
+You can also just use a one-off function to get the sentiment from both the news and twitter combined.
+
+```python
+from abraham3k.prophets import Isaiah
+
+darthvader = Isaiah(news_source="google") 
+
+scores = darthvader.summary(["tesla", "amd"], weights={"news": 0.5, "twitter": 0.5})
+
+print(scores)
+'''
+{'amd': (59.0, 41.0), 'tesla': (46.1, 53.9)}
+'''
+```
+
 ## Changing News Sources
 
 `Isaiah` supports two news sources: [Google News](https://news.google.com/) and [NewsAPI](https://newsapi.org/). Default is [Google News](https://news.google.com/), but you can change it to [NewsAPI](https://newsapi.org/) by passing `Isaiah(news_source='newsapi', api_key='<your api key')` when instantiating. I'd highly recommend using [NewsAPI](https://newsapi.org/). It's much better than the [Google News](https://news.google.com/) API. Setup is really simple, just head to the [register](https://newsapi.org/register) page and sign up to get your API key.
@@ -124,4 +139,4 @@ Pull requests welcome!
 
 ## Detailed Usage
 
-Coming soon. However, there is heavy and complete documentation in the actual code.
+Coming soon. However, there is heavy documentation in the actual code.

@@ -47,7 +47,7 @@ class NewsAPI:
         cleans the fetched jsonfile and renames columns
     cleaned_to_df(cleaned_dict)
         parses the cleaned json dictionary to a pandas DataFrame
-    get_articles(search_for, up_to=today, window=1)
+    get_articles
         wraps the 3 previous functions all into one user friendly one
     """
 
@@ -197,7 +197,7 @@ class GoogleNewsParser:
     -------
     _get_text(inst)
         gets the text for each article it recieves
-    get_articles(search_for, up_to=today, window=1)
+    get_articles
         Gets articles for a single search term
     """
 
@@ -604,15 +604,16 @@ class Isaiah:
 
     Methods
     -------
-    get_articles(search_for, up_to=today, window=2)
+    get_articles
         gets articles for a single search term
-    compute_total_avg(results_df, meta)
-        computes avg scores for each row and column of an entire dataframe
-    score_all(topic_results, meta)
-        takes care of scoring the entire dataframe for each topic
-    news_sentiment_summary(topics, window=2, up_to=today)
+    twitter_sentiment
+        takes a list of topics and gets the raw scores for each
+        (per topic per text type per row)
+    twitter_summary
         takes a list of topics and computes the avg scores for each
-    news_sentiment(topics, window=2, up_to=today)
+    news_summary
+        takes a list of topics and computes the avg scores for each
+    news_sentiment
         takes a list of topics and gets the raw scores for each
         (per topic per text type per row)
     """
@@ -783,6 +784,50 @@ class Isaiah:
             scores[topic] = total
         return scores
 
+    def news_sentiment(
+        self,
+        topics: list,
+        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
+        end_time=datetime.now().strftime(TWITTER_TF),
+    ):
+        """Gets the WHOLE sentiment for each topic. No or minimal averaging occurs.
+
+        Parameters
+        ----------
+        topics : list
+            list of terms to search for
+        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
+        end_time : str = datetime.now().strftime(TWITTER_TF)
+            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
+
+        Returns
+        -------
+        scores : dict
+            returns a 2d dict, set up like so:
+            {
+                topic: {"title": titles, "desc": desc, "text": text}
+            }
+            where title, desc, and text are dataframes and each row looks like this:
+            neg    neu    pos  compound                   sentence              datetime
+          0.173  0.827  0.000   -0.5859  Tesla working vehicle ...  2021-04-20T09:31:36Z
+        """
+
+        articles = self.get_articles(topics, start_time=start_time, end_time=end_time)
+        scores = {}
+        for topic in articles:
+            titles = self.sia.analyze_flair_text(
+                articles[topic][["title", "datetime"]], "title"
+            )
+            desc = self.sia.analyze_flair_text(
+                articles[topic][["desc", "datetime"]], "desc"
+            )
+            text = self.sia.analyze_flair_text(
+                articles[topic][["text", "datetime"]], "text"
+            )
+            scores[topic] = {"title": titles, "desc": desc, "text": text}
+        return scores
+
     def twitter_summary(
         self,
         topics: list,
@@ -832,50 +877,6 @@ class Isaiah:
             )
         return scores
 
-    def news_sentiment(
-        self,
-        topics: list,
-        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
-        end_time=datetime.now().strftime(TWITTER_TF),
-    ):
-        """Gets the WHOLE sentiment for each topic. No or minimal averaging occurs.
-
-        Parameters
-        ----------
-        topics : list
-            list of terms to search for
-        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
-            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
-        end_time : str = datetime.now().strftime(TWITTER_TF)
-            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
-
-        Returns
-        -------
-        scores : dict
-            returns a 2d dict, set up like so:
-            {
-                topic: {"title": titles, "desc": desc, "text": text}
-            }
-            where title, desc, and text are dataframes and each row looks like this:
-            neg    neu    pos  compound                   sentence              datetime
-          0.173  0.827  0.000   -0.5859  Tesla working vehicle ...  2021-04-20T09:31:36Z
-        """
-
-        articles = self.get_articles(topics, start_time=start_time, end_time=end_time)
-        scores = {}
-        for topic in articles:
-            titles = self.sia.analyze_flair_text(
-                articles[topic][["title", "datetime"]], "title"
-            )
-            desc = self.sia.analyze_flair_text(
-                articles[topic][["desc", "datetime"]], "desc"
-            )
-            text = self.sia.analyze_flair_text(
-                articles[topic][["text", "datetime"]], "text"
-            )
-            scores[topic] = {"title": titles, "desc": desc, "text": text}
-        return scores
-
     def twitter_sentiment(
         self,
         topics: list,
@@ -883,7 +884,7 @@ class Isaiah:
         start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
         end_time=datetime.now().strftime(TWITTER_TF),
     ):
-        """Gets the WHOLE sentiment for each topic. No or minimal averaging occurs.
+        """Gets the WHOLE sentiment for each topic from twitter. No or minimal averaging occurs.
 
         Parameters
         ----------
@@ -899,7 +900,7 @@ class Isaiah:
         Returns
         -------
         scores : dict
-            a dict of dataframe of scores for each tweet
+            a dict of dataframe of scores for each topic
         """
         if not self.bearer_token:
             warnings.warn("No bearer token provided on instantiation.")
@@ -914,3 +915,57 @@ class Isaiah:
             scored_frame = self.sia.analyze_flair_text(tweets, "text")
             scores[topic] = scored_frame
         return scores
+
+    def summary(
+        self,
+        topics: list,
+        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
+        end_time=datetime.now().strftime(TWITTER_TF),
+        weights={"news": 0.5, "twitter": 0.5},
+    ):
+        """Gets the WHOLE sentiment from news and twitter for each topic.
+
+        Parameters
+        ----------
+        topics : list
+            list of terms to search for
+        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
+        end_time : str = datetime.now().strftime(TWITTER_TF)
+            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
+        weights : dict = {"news": 0.5, "twitter": 0.5}
+            how to weight the news results to the twitter results
+
+        Returns
+        -------
+        total : dict
+            a dict of dataframe of scores for each topic
+        """
+        twitter = self.twitter_summary(
+            topics=topics, start_time=start_time, end_time=end_time
+        )
+        news = self.news_summary(
+            topics=topics, start_time=start_time, end_time=end_time
+        )
+        total = {}
+        for topic in twitter:
+            try:
+                total[topic] = (
+                    round(
+                        (
+                            twitter[topic][0] * weights["twitter"]
+                            + news[topic][0] * weights["news"]
+                        ),
+                        1,
+                    ),
+                    round(
+                        (
+                            twitter[topic][1] * weights["twitter"]
+                            + news[topic][1] * weights["news"]
+                        ),
+                        1,
+                    ),
+                )
+            except Exception as e:
+                warnings.warn(f"Error getting total for {topic} ({e})")
+        return total
