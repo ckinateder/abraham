@@ -177,9 +177,15 @@ class NewsAPI:
             a dataframe of the results with columns ['title', 'author', 'source', 'desc',
                                                     'text', 'datetime', 'url', 'urlToImage']
         """
-        jresponse = self.fetch_json(searchfor, start_time=start_time, end_time=end_time)
-        cleaned = self.clean_response(jresponse)
-        cleaned_df = self.cleaned_to_df(cleaned)
+        cleaned_df = pd.DataFrame()
+        try:
+            jresponse = self.fetch_json(
+                searchfor, start_time=start_time, end_time=end_time
+            )
+            cleaned = self.clean_response(jresponse)
+            cleaned_df = self.cleaned_to_df(cleaned)
+        except Exception as e:
+            warnings.warn("Issue pulling from news api ... try again later.")
         return cleaned_df
 
 
@@ -969,3 +975,5 @@ class Isaiah:
             except Exception as e:
                 warnings.warn(f"Error getting total for {topic} ({e})")
         return total
+
+    ## now for time travel
