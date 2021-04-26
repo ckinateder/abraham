@@ -5,7 +5,7 @@ from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import sent_tokenize
 from GoogleNews import GoogleNews
 from newspaper import Article, ArticleException
-from tqdm import tqdm
+from tqdm import tqdm, trange
 from threading import Thread
 from datetime import datetime, timedelta
 import re
@@ -622,6 +622,18 @@ class Isaiah:
     news_sentiment
         takes a list of topics and gets the raw scores for each
         (per topic per text type per row)
+    summary
+        takes a list of topics and gets the news and twitter summary
+        avg for each topic
+    news_summary_interval
+        takes a list of topics and gets the NEWS summary over each
+        'period' intervals from oldest to newest
+    twitter_summary_interval
+        takes a list of topics and gets the TWITTER summary over each
+        'period' intervals from oldest to newest
+    summary_interval
+        takes a list of topics and gets the NEWS+TWITTER AVG
+        summary over each 'period' intervals from oldest to newest
     """
 
     def __init__(
@@ -976,4 +988,214 @@ class Isaiah:
                 warnings.warn(f"Error getting total for {topic} ({e})")
         return total
 
-    ## now for time travel
+        ## now for time travel
+
+    def _intervals(self, start, end, delta):
+        """Get the number of delta-size intervals in start to end
+
+        Parameters
+        ----------
+        start : datetime.datetime
+            the start date
+        end : datetime.datetime
+            the end date
+        delta : datetime.timedelta
+            the interval size
+
+        Returns
+        -------
+        count : int
+            number of delta-size intervals in start-end
+        """
+        curr = start
+        count = 0
+        while curr < end:
+            count += 1
+            curr += delta
+        return count
+
+    def news_summary_interval(
+        self,
+        topics,
+        oldest=datetime.now() - timedelta(days=1),
+        newest=datetime.now(),
+        period=timedelta(hours=1),
+    ):
+        """Get the NEWS summary over each 'period' intervals from oldest to newest
+
+        Parameters
+        ----------
+        topics : list
+            list of topics to search for
+        oldest : datetime.datetime
+            oldest datetime to search from
+        newest : datetime.datetime
+            newest datetime to search up to
+        period : timedelta
+            interval to advance through with
+
+        Returns
+        -------
+        results : dict
+            a dictionary of results in form `topic : results dataframe`
+        """
+        results = {}
+
+        for topic in topics:
+            now = newest
+            df = pd.DataFrame(
+                columns=["start_time", "end_time", "positive", "negative"]
+            )
+
+            for i in trange(
+                self._intervals(oldest, newest, period),
+                leave=True,
+                dynamic_ncols=True,
+                desc="backtest",
+            ):
+                pre = now - period
+
+                scores = self.news_summary(
+                    [topic],
+                    start_time=pre.strftime(TWITTER_TF),
+                    end_time=now.strftime(TWITTER_TF),
+                )[topic]
+
+                # add to dataframe
+                df = df.append(
+                    {
+                        "start_time": pre,
+                        "end_time": now,
+                        "positive": scores[0],
+                        "negative": scores[1],
+                    },
+                    ignore_index=True,
+                )
+                # move back
+                now = pre
+            results[topic] = df
+        return results
+
+    def twitter_summary_interval(
+        self,
+        topics,
+        oldest=datetime.now() - timedelta(days=1),
+        newest=datetime.now(),
+        period=timedelta(hours=1),
+    ):
+        """Get the TWITTER summary over each 'period' intervals from oldest to newest
+
+        Parameters
+        ----------
+        topics : list
+            list of topics to search for
+        oldest : datetime.datetime
+            oldest datetime to search from
+        newest : datetime.datetime
+            newest datetime to search up to
+        period : timedelta
+            interval to advance through with
+
+        Returns
+        -------
+        results : dict
+            a dictionary of results in form `topic : results dataframe`
+        """
+        results = {}
+
+        for topic in topics:
+            now = newest
+            df = pd.DataFrame(
+                columns=["start_time", "end_time", "positive", "negative"]
+            )
+
+            for i in trange(
+                self._intervals(oldest, newest, period),
+                leave=True,
+                dynamic_ncols=True,
+                desc="backtest",
+            ):
+                pre = now - period
+
+                scores = self.twitter_summary(
+                    [topic],
+                    start_time=pre.strftime(TWITTER_TF),
+                    end_time=now.strftime(TWITTER_TF),
+                )[topic]
+
+                # add to dataframe
+                df = df.append(
+                    {
+                        "start_time": pre,
+                        "end_time": now,
+                        "positive": scores[0],
+                        "negative": scores[1],
+                    },
+                    ignore_index=True,
+                )
+                # move back
+                now = pre
+            results[topic] = df
+        return results
+
+    def summary_interval(
+        self,
+        topics,
+        oldest=datetime.now() - timedelta(days=1),
+        newest=datetime.now(),
+        period=timedelta(hours=1),
+    ):
+        """Get the TOTAL summary (twitter/newsapi) over each 'period' intervals from oldest to newest
+
+        Parameters
+        ----------
+        topics : list
+            list of topics to search for
+        oldest : datetime.datetime
+            oldest datetime to search from
+        newest : datetime.datetime
+            newest datetime to search up to
+        period : timedelta
+            interval to advance through with
+
+        Returns
+        -------
+        results : dict
+            a dictionary of results in form `topic : results dataframe`
+        """
+        results = {}
+
+        for topic in topics:
+            now = newest
+            df = pd.DataFrame(
+                columns=["start_time", "end_time", "positive", "negative"]
+            )
+
+            for i in trange(
+                self._intervals(oldest, newest, period),
+                leave=True,
+                dynamic_ncols=True,
+                desc="backtest",
+            ):
+                pre = now - period
+
+                scores = self.summary(
+                    [topic],
+                    start_time=pre.strftime(TWITTER_TF),
+                    end_time=now.strftime(TWITTER_TF),
+                )[topic]
+
+                # add to dataframe
+                df = df.append(
+                    {
+                        "start_time": pre,
+                        "end_time": now,
+                        "positive": scores[0],
+                        "negative": scores[1],
+                    },
+                    ignore_index=True,
+                )
+                # move back
+                now = pre
+            results[topic] = df
+        return results
