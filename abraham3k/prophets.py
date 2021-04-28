@@ -442,12 +442,13 @@ class Elijiah:
         analyze one sentence at time
     """
 
-    def __init__(self) -> None:
+    def __init__(self, tqdisable=False) -> None:
         self.vader = SentimentIntensityAnalyzer()
         self.lemmatizer = WordNetLemmatizer()
         print("Importing Flair")
         self.sunflair = flair.models.TextClassifier.load("en-sentiment")
         nltk.download("vader_lexicon")
+        self.tqdisable = tqdisable
 
     def sentiment_analyzer_sent(self, sentence: str):
         """Analyzes a single sentence and returns the score
@@ -685,7 +686,7 @@ class Isaiah:
         tqdisable : bool = False
             disale progressbars
         """
-        self.sia = Elijiah()
+        self.sia = Elijiah(tqdisable=True)
         if news_source == "newsapi":
             if newsapi_key:
                 self.news_source = "newsapi"
