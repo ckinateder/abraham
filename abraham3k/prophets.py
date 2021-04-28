@@ -318,7 +318,7 @@ class TwitterParser:
         takes a topic and gets the tweets for it
     """
 
-    def __init__(self, bearer_token) -> None:
+    def __init__(self, bearer_token, tqdisable=False) -> None:
         """
         Parameters
         ----------
@@ -326,6 +326,7 @@ class TwitterParser:
             twitter api bearer token
         """
         self.bearer_token = bearer_token
+        self.tqdisable = tqdisable
 
     def parse_tweet(self, tweet):
         """Parse a tweet and return just what we need
@@ -447,7 +448,7 @@ class Elijiah:
         self.lemmatizer = WordNetLemmatizer()
         print("Importing Flair")
         self.sunflair = flair.models.TextClassifier.load("en-sentiment")
-        nltk.download("vader_lexicon")
+        # nltk.download("vader_lexicon")
         self.tqdisable = tqdisable
 
     def sentiment_analyzer_sent(self, sentence: str):
@@ -578,27 +579,35 @@ class Elijiah:
         probs = []
         sentiments = []
         newframe = tweets.copy()
-        newframe[section] = newframe[section].apply(self.normalize_text)
-        for tweet in tqdm(
-            newframe[section].to_list(),
-            desc=section,
-            leave=False,
-            dynamic_ncols=True,
-            disable=self.tqdisable,
-        ):
-            # if tweet empty
-            if len(tweet) == 0:
-                probs.append("NEUTRAL")
-                sentiments.append("NEUTRAL")
-            else:
-                # make prediction
-                sentence = flair.data.Sentence(tweet)
-                self.sunflair.predict(sentence)
-                # extract sentiment prediction
-                probs.append(sentence.labels[0].score)  # numerical score 0-1
-                sentiments.append(sentence.labels[0].value)  # 'POSITIVE' or 'NEGATIVE'
+        try:
+            newframe[section] = newframe[section].apply(self.normalize_text)
 
-        # add probability and sentiment predictions to tweets dataframe
+            for tweet in tqdm(
+                newframe[section].to_list(),
+                desc=section,
+                leave=False,
+                dynamic_ncols=True,
+                disable=self.tqdisable,
+            ):
+                # if tweet empty
+                if not tweet:
+                    tweet = ""  # make string if none
+                if len(tweet) == 0:
+                    probs.append("NEUTRAL")
+                    sentiments.append("NEUTRAL")
+                else:
+                    # make prediction
+                    sentence = flair.data.Sentence(tweet)
+                    self.sunflair.predict(sentence)
+                    # extract sentiment prediction
+                    probs.append(sentence.labels[0].score)  # numerical score 0-1
+                    sentiments.append(
+                        sentence.labels[0].value
+                    )  # 'POSITIVE' or 'NEGATIVE'
+        except:
+            probs = ["NEUTRAL"] * newframe.shape[0]
+            sentiments = ["NEUTRAL"] * newframe.shape[0]
+            # add probability and sentiment predictions to tweets dataframe
         newframe["probability"] = probs
         newframe["sentiment"] = sentiments
         newframe = newframe[newframe.probability != "NEUTRAL"]
@@ -902,24 +911,27 @@ class Isaiah:
             topics, size=size, start_time=start_time, end_time=end_time
         )
         for topic in raws:
-            scores[topic] = (
-                round(
-                    raws[topic]
-                    .loc[raws[topic]["sentiment"] == "POSITIVE"]
-                    .dropna()
-                    .shape[0]
-                    * (100 / raws[topic].shape[0]),
-                    1,
-                ),
-                round(
-                    raws[topic]
-                    .loc[raws[topic]["sentiment"] == "NEGATIVE"]
-                    .dropna()
-                    .shape[0]
-                    * (100 / raws[topic].shape[0]),
-                    1,
-                ),
-            )
+            try:
+                scores[topic] = (
+                    round(
+                        raws[topic]
+                        .loc[raws[topic]["sentiment"] == "POSITIVE"]
+                        .dropna()
+                        .shape[0]
+                        * (100 / raws[topic].shape[0]),
+                        1,
+                    ),
+                    round(
+                        raws[topic]
+                        .loc[raws[topic]["sentiment"] == "NEGATIVE"]
+                        .dropna()
+                        .shape[0]
+                        * (100 / raws[topic].shape[0]),
+                        1,
+                    ),
+                )
+            except:
+                scores[topic] = (-1, -1)
         return scores
 
     def twitter_sentiment(
@@ -952,7 +964,7 @@ class Isaiah:
             return {}
 
         scores = {}
-        twitterparser = TwitterParser(self.bearer_token)
+        twitterparser = TwitterParser(self.bearer_token, tqdisable=True)
         for topic in topics:
             tweets = twitterparser.get_tweets(
                 topic, pages=int(size / 100), start_time=start_time, end_time=end_time
@@ -1074,9 +1086,7 @@ class Isaiah:
 
         for topic in topics:
             now = newest
-            df = pd.DataFrame(
-                columns=["start_time", "end_time", "positive", "negative"]
-            )
+            df = pd.DataFrame(columns=["timestamp", "positive", "negative"])
 
             for i in trange(
                 self._intervals(oldest, newest, period),
@@ -1096,10 +1106,10 @@ class Isaiah:
                 # add to dataframe
                 df = df.append(
                     {
-                        "start_time": pre,
-                        "end_time": now,
+                        "timestamp": now,
                         "positive": scores[0],
                         "negative": scores[1],
+                        "lag": period,
                     },
                     ignore_index=True,
                 )
@@ -1137,9 +1147,7 @@ class Isaiah:
 
         for topic in topics:
             now = newest
-            df = pd.DataFrame(
-                columns=["start_time", "end_time", "positive", "negative"]
-            )
+            df = pd.DataFrame(columns=["timestamp", "positive", "negative"])
 
             for i in trange(
                 self._intervals(oldest, newest, period),
@@ -1159,10 +1167,10 @@ class Isaiah:
                 # add to dataframe
                 df = df.append(
                     {
-                        "start_time": pre,
-                        "end_time": now,
+                        "timestamp": now,
                         "positive": scores[0],
                         "negative": scores[1],
+                        "lag": period,
                     },
                     ignore_index=True,
                 )
@@ -1200,9 +1208,7 @@ class Isaiah:
 
         for topic in topics:
             now = newest
-            df = pd.DataFrame(
-                columns=["start_time", "end_time", "positive", "negative"]
-            )
+            df = pd.DataFrame(columns=["timestamp", "positive", "negative"])
 
             for i in trange(
                 self._intervals(oldest, newest, period),
@@ -1222,10 +1228,10 @@ class Isaiah:
                 # add to dataframe
                 df = df.append(
                     {
-                        "start_time": pre,
-                        "end_time": now,
+                        "timestamp": now,
                         "positive": scores[0],
                         "negative": scores[1],
+                        "lag": period,
                     },
                     ignore_index=True,
                 )
