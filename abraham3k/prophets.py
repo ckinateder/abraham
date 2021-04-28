@@ -3,6 +3,7 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import sent_tokenize
+import nltk
 from GoogleNews import GoogleNews
 from newspaper import Article, ArticleException
 from tqdm import tqdm, trange
@@ -272,7 +273,11 @@ class GoogleNewsParser:
         results = self.googlenews.results()  # get the results
 
         self.pbar = tqdm(
-            total=len(results), unit="article", desc=search_term, leave=False
+            total=len(results),
+            unit="article",
+            desc=search_term,
+            leave=False,
+            disable=self.tqdisable,
         )
 
         processes = []  # multi thread the execution
@@ -392,6 +397,7 @@ class TwitterParser:
                         leave=False,
                         desc=f"{topic} tweets",
                         dynamic_ncols=True,
+                        disable=self.tqdisable,
                     ):
                         try:
                             row = self.parse_tweet(tweet)
@@ -441,6 +447,7 @@ class Elijiah:
         self.lemmatizer = WordNetLemmatizer()
         print("Importing Flair")
         self.sunflair = flair.models.TextClassifier.load("en-sentiment")
+        nltk.download("vader_lexicon")
 
     def sentiment_analyzer_sent(self, sentence: str):
         """Analyzes a single sentence and returns the score
@@ -517,7 +524,11 @@ class Elijiah:
         """
         scores = []
         for ind in tqdm(
-            frame.index, leave=False, unit="text", desc=f"analyze {section}"
+            frame.index,
+            leave=False,
+            unit="text",
+            desc=f"analyze {section}",
+            disable=self.tqdisable,
         ):
             # iterate through list of sent tokenize
             item = frame[section][ind]
@@ -563,7 +574,11 @@ class Elijiah:
         newframe = tweets.copy()
         newframe[section] = newframe[section].apply(self.normalize_text)
         for tweet in tqdm(
-            newframe[section].to_list(), desc=section, leave=False, dynamic_ncols=True
+            newframe[section].to_list(),
+            desc=section,
+            leave=False,
+            dynamic_ncols=True,
+            disable=self.tqdisable,
         ):
             # if tweet empty
             if len(tweet) == 0:
@@ -607,6 +622,8 @@ class Isaiah:
         print unnecessary output (for debugging ususally)
     bearer_token : str
         bearer token for the twitter api
+    tqdisable : bool
+        disale progressbars
 
     Methods
     -------
@@ -643,6 +660,7 @@ class Isaiah:
         bearer_token=None,
         weights={"title": 0.33, "desc": 0.33, "text": 0.34},
         loud=False,
+        tqdisable=False,
     ) -> None:
         """
         Parameters
@@ -659,6 +677,8 @@ class Isaiah:
             how to weight the title, desc, and text attributes
         loud : dict = False
             print unnecessary output (for debugging ususally)
+        tqdisable : bool = False
+            disale progressbars
         """
         self.sia = Elijiah()
         if news_source == "newsapi":
@@ -677,6 +697,7 @@ class Isaiah:
         self.weights = weights
         self.loud = loud
         self.bearer_token = bearer_token
+        self.tqdisable = tqdisable
 
     def get_articles(
         self,
@@ -1014,6 +1035,10 @@ class Isaiah:
             curr += delta
         return count
 
+    def _is_bday(self, dt):
+        """Returns true if dt between 9:30 and 4:30"""
+        return bool(len(pd.bdate_range(dt, dt)))
+
     def news_summary_interval(
         self,
         topics,
@@ -1052,6 +1077,7 @@ class Isaiah:
                 leave=True,
                 dynamic_ncols=True,
                 desc="backtest",
+                disable=self.tqdisable,
             ):
                 pre = now - period
 
@@ -1114,6 +1140,7 @@ class Isaiah:
                 leave=True,
                 dynamic_ncols=True,
                 desc="backtest",
+                disable=self.tqdisable,
             ):
                 pre = now - period
 
@@ -1176,6 +1203,7 @@ class Isaiah:
                 leave=True,
                 dynamic_ncols=True,
                 desc="backtest",
+                disable=self.tqdisable,
             ):
                 pre = now - period
 
