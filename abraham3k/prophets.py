@@ -479,25 +479,30 @@ class Elijiah:
         str
             the normalized sentetnce
         """
-        subbed = sentence
-        clean = re.compile("<.*?>")
+        try:
+            subbed = sentence
+            clean = re.compile("<.*?>")
 
-        web_address = re.compile(r"(?i)http(s):\/\/[a-z0-9.~_\-\/]+")
-        user = re.compile(r"(?i)@[a-z0-9_]+")
-        whitespace = re.compile(r"\s+")
+            web_address = re.compile(r"(?i)http(s):\/\/[a-z0-9.~_\-\/]+")
+            user = re.compile(r"(?i)@[a-z0-9_]+")
+            whitespace = re.compile(r"\s+")
 
-        subbed = web_address.sub("", subbed)
-        # subbed = whitespace.sub("", subbed)
-        subbed = user.sub("", subbed)
-        subbed = re.sub(clean, "", subbed)
-        subbed = re.sub("\[+(.*?)chars\]", "", subbed)
-        word_list = subbed.split()
-        filtered_words = [
-            word for word in word_list if word not in stopwords.words("english")
-        ]
-        lemmatized_words = [self.lemmatizer.lemmatize(word) for word in filtered_words]
-        new_sentence = " ".join(lemmatized_words)
-        return new_sentence
+            subbed = web_address.sub("", subbed)
+            # subbed = whitespace.sub("", subbed)
+            subbed = user.sub("", subbed)
+            subbed = re.sub(clean, "", subbed)
+            subbed = re.sub("\[+(.*?)chars\]", "", subbed)
+            word_list = subbed.split()
+            filtered_words = [
+                word for word in word_list if word not in stopwords.words("english")
+            ]
+            lemmatized_words = [
+                self.lemmatizer.lemmatize(word) for word in filtered_words
+            ]
+            new_sentence = " ".join(lemmatized_words)
+            return new_sentence
+        except:
+            return sentence
 
     def analyze_news_text(
         self, frame: pd.DataFrame, section: str, recursive: bool = False
