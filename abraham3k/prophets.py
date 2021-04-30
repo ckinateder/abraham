@@ -13,9 +13,13 @@ import re
 import pandas as pd
 import time, requests
 import warnings
-import sys
+import sys, logging
+
+
 from dateutil.parser._parser import UnknownTimezoneWarning
 import flair
+
+logging.getLogger("flair").setLevel(logging.WARNING)
 
 warnings.simplefilter("ignore", UnknownTimezoneWarning)
 
@@ -446,7 +450,7 @@ class Elijiah:
     def __init__(self, tqdisable=False) -> None:
         self.vader = SentimentIntensityAnalyzer()
         self.lemmatizer = WordNetLemmatizer()
-        print("Importing Flair")
+
         self.sunflair = flair.models.TextClassifier.load("en-sentiment")
         # nltk.download("vader_lexicon")
         self.tqdisable = tqdisable
