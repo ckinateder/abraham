@@ -123,7 +123,7 @@ print(scores)
 
 ## Twitter Functionality
 
-I'd highly recommend integrating twitter. It's really simple; just head to [Twitter Developer](https://developer.twitter.com/en) to sign up and get your bearer_token.
+I'd highly recommend integrating twitter. It's really simple; just head to [Twitter Developer](https://developer.twitter.com/en) to sign up and get your bearer token. If you don't want to sign up, you can actually use it free with the twint API (no keys needed). This is the default.
 
 ## Updates
 

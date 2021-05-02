@@ -8,13 +8,13 @@ from GoogleNews import GoogleNews
 from newspaper import Article, ArticleException
 from tqdm import tqdm, trange
 from threading import Thread
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 import re
 import pandas as pd
 import time, requests
 import warnings
 import sys, logging
-
+import twint
 
 from dateutil.parser._parser import UnknownTimezoneWarning
 import flair
@@ -27,6 +27,7 @@ warnings.simplefilter("ignore", UnknownTimezoneWarning)
 GOOGLENEWS_TF = "%m/%d/%Y"
 # TWITTER_TF = "%Y-%m-%d"
 TWITTER_TF = "%Y-%m-%dT%H:%M:%SZ"
+TWINT_TF = "%Y-%m-%d %H:%M:%S"
 
 NEWSAPI_URL = "https://newsapi.org/v2/everything?"
 TWITTER_URL = "https://api.twitter.com/2/tweets/search/recent"
@@ -317,7 +318,7 @@ class TwitterParser:
         twitter api bearer token
 
     Methods
-    .......
+    -------
     get_tweets(topic)
         takes a topic and gets the tweets for it
     """
@@ -418,6 +419,99 @@ class TwitterParser:
                     )
             except Exception as e:
                 warnings.warn(f"Error while getting tweets ({e})")
+        return tweets
+
+
+class TwintParser:
+    """
+    Gets tweets for analyzing
+
+    ...
+
+    Attributes
+    ----------
+    bearer_token : str
+        twitter api bearer token
+
+    Methods
+    -------
+    get_tweets(topic)
+        takes a topic and gets the tweets for it
+    """
+
+    def __init__(self, tqdisable=False) -> None:
+        """
+        Parameters
+        ----------
+        bearer_token : str
+            twitter api bearer token
+        """
+        self.config = twint.Config()
+        self.config.Lang = "en"
+        self.config.Pandas = True
+        self.config.Hide_output = True
+        self.tqdisable = tqdisable
+
+    def parse_tweet(self, tweet):
+        """Parse a tweet and return just what we need
+
+        Parameters
+        ----------
+        tweet : json
+            the raw tweet object
+
+        Returns
+        -------
+        data : dict
+            a dict of just the important parts (id, text, created_at)
+        """
+        data = {
+            "id": tweet["id"],
+            "created_at": tweet["created_at"],
+            "text": tweet["text"],
+        }
+        return data
+
+    def get_tweets(
+        self,
+        topic,
+        pages=2,
+        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
+        end_time=datetime.now().strftime(TWITTER_TF),
+    ):  # how many days back to go
+        """Get the tweets for a given topic
+
+        Parameters
+        ----------
+        topic : str
+            topic to search for
+        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
+        end_time : str = datetime.now().strftime(TWITTER_TF)
+            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
+
+        Returns
+        -------
+        tweets : pd.DataFrame
+            a dataframe of the tweets
+            Sample row:
+                             created_at        id                        text
+        Fri Apr 23 17:44:44 +0000 2021  138565089  RT @jenine1207: @siiyuun...
+        """
+        # define params
+
+        tweets = pd.DataFrame()
+        self.config.Search = topic
+        self.config.Limit = round(pages * 100)  # make sure its an int
+        self.config.Since = datetime.strptime(start_time, TWITTER_TF).strftime(TWINT_TF)
+        self.config.Until = datetime.strptime(end_time, TWITTER_TF).strftime(TWINT_TF)
+
+        try:
+            twint.run.Search(self.config)
+            tweets = twint.storage.panda.Tweets_df[["id", "created_at", "tweet"]]
+            tweets = tweets.rename(columns={"tweet": "text"})
+        except Exception as e:
+            warnings.warn(f"Error while getting tweets ({e})")
         return tweets
 
 
@@ -715,7 +809,11 @@ class Isaiah:
             self.newsparser = GoogleNewsParser()
         self.weights = weights
         self.loud = loud
-        self.bearer_token = bearer_token
+
+        if bearer_token:
+            self.twitterparser = TwitterParser(bearer_token, tqdisable=True)
+        else:
+            self.twitterparser = TwintParser(tqdisable=True)
         self.tqdisable = tqdisable
 
     def get_articles(
@@ -963,14 +1061,9 @@ class Isaiah:
         scores : dict
             a dict of dataframe of scores for each topic
         """
-        if not self.bearer_token:
-            warnings.warn("No bearer token provided on instantiation.")
-            return {}
-
         scores = {}
-        twitterparser = TwitterParser(self.bearer_token, tqdisable=True)
         for topic in topics:
-            tweets = twitterparser.get_tweets(
+            tweets = self.twitterparser.get_tweets(
                 topic, pages=int(size / 100), start_time=start_time, end_time=end_time
             )
             scored_frame = self.sia.analyze_flair_text(tweets, "text")

@@ -1,0 +1,6 @@
+echo $1 > version
+rm -rf build dist
+python3 setup.py sdist bdist_wheel && python3 -m twine upload --repository-url https://upload.pypi.org/legacy/ dist/*
+git add .
+git commit -m "$2"
+git push
