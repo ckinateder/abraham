@@ -515,9 +515,10 @@ class TwintParser:
         return tweets
 
 
-class Elijiah:
+class Abraham:
     """
-    Performs sentiment analysis on sentences. Named after the biblical prophet
+    Performs sentiment analysis on a search term by taking care of gathering
+    all the articles and scoring. Named after the biblical prophet
 
     ...
 
@@ -529,19 +530,105 @@ class Elijiah:
         flair model for the tweets
     lemmatizer : WordNetLemmatizer
         lemmatizer from nltk
+    news_source : str
+        where to get the news from (google or newsapi)
+    splitting : bool
+        whether or not to recursively analyze each sentence
+    weights : dict
+        how to weight the title, desc, and text attributes
+        ex: {"title": 0.2, "desc": 0.3, "text": 0.5}
+    loud : bool
+        print unnecessary output (for debugging ususally)
+    bearer_token : str
+        bearer token for the twitter api
+    tqdisable : bool
+        disale progressbars
 
     Methods
     -------
-    sentiment_analyzer_sent(sentence)
+    _sentiment_analyzer_sent(sentence)
         analyzes a single sentence and returns the score
-    normalize_text(sentence)
+    _normalize_text(sentence)
         normalizes a sentence (removes tags, lemmatizes, etc...)
-    analyze_news_text(frame, section, recursive)
+    _analyze_news_text(frame, section, recursive)
         takes a dataframe and a section and scores each row. if recursive=True, it will only
         analyze one sentence at time
+    get_articles
+        gets articles for a single search term
+    twitter_sentiment
+        takes a list of topics and gets the raw scores for each
+        (per topic per text type per row)
+    twitter_summary
+        takes a list of topics and computes the avg scores for each
+    news_summary
+        takes a list of topics and computes the avg scores for each
+    news_sentiment
+        takes a list of topics and gets the raw scores for each
+        (per topic per text type per row)
+    summary
+        takes a list of topics and gets the news and twitter summary
+        avg for each topic
+    news_summary_interval
+        takes a list of topics and gets the NEWS summary over each
+        'period' intervals from oldest to newest
+    twitter_summary_interval
+        takes a list of topics and gets the TWITTER summary over each
+        'period' intervals from oldest to newest
+    summary_interval
+        takes a list of topics and gets the NEWS+TWITTER AVG
+        summary over each 'period' intervals from oldest to newest
     """
 
-    def __init__(self, tqdisable=False) -> None:
+    def __init__(
+        self,
+        news_source="google",
+        newsapi_key=None,
+        bearer_token=None,
+        weights={"title": 0.33, "desc": 0.33, "text": 0.34},
+        loud=False,
+        tqdisable=True,
+    ) -> None:
+        """
+        Parameters
+        ----------
+        news_source : str = "google"
+            where to get the news from
+        newsapi_key : str = None
+            api key to connect to newsapi.org
+        bearer_token : str  = None
+            bearer token for the twitter api
+        spliting : bool = False
+            recursively analyze each sentence or not
+        weights : dict = {"title": 0.33, "desc": 0.33, "text": 0.34}
+            how to weight the title, desc, and text attributes within the news
+        loud : dict = False
+            print unnecessary output (for debugging ususally)
+        tqdisable : bool = True
+            disable progressbars
+        """
+
+        if news_source == "newsapi":
+            if newsapi_key:
+                self.news_source = "newsapi"
+                self.newsparser = NewsAPI(newsapi_key=newsapi_key)
+            else:
+                print(
+                    "You requested newsapi but no key was provided. Defaulting to googlenews."
+                )
+                self.news_source = "google"
+                self.newsparser = GoogleNewsParser()
+        else:
+            self.news_source = "google"
+            self.newsparser = GoogleNewsParser()
+        self.weights = weights
+        self.loud = loud
+
+        if bearer_token:
+            self.twitterparser = TwitterParser(bearer_token, tqdisable=True)
+        else:
+            self.twitterparser = TwintParser(tqdisable=True)
+
+        # sentiment analysis directly
         self.vader = SentimentIntensityAnalyzer()
         self.lemmatizer = WordNetLemmatizer()
 
@@ -549,7 +636,7 @@ class Elijiah:
         # nltk.download("vader_lexicon")
         self.tqdisable = tqdisable
 
-    def sentiment_analyzer_sent(self, sentence: str):
+    def _sentiment_analyzer_sent(self, sentence: str):
         """Analyzes a single sentence and returns the score
 
         Parameters
@@ -566,7 +653,7 @@ class Elijiah:
         print("{:-<40} {}".format(sentence, str(score)))
         return score
 
-    def normalize_text(self, sentence: str):
+    def _normalize_text(self, sentence: str):
         """Normalizes a sentence
 
         Parameters
@@ -604,7 +691,7 @@ class Elijiah:
         except:
             return sentence
 
-    def analyze_news_text(
+    def _analyze_news_text(
         self, frame: pd.DataFrame, section: str, recursive: bool = False
     ):
         """Takes a dataframe and a section and scores each row of frame[section]. If recursive=True, it will only
@@ -641,14 +728,14 @@ class Elijiah:
 
             if recursive:
                 for sentence in sent_tokenize(item):
-                    sentence = self.normalize_text(sentence)
+                    sentence = self._normalize_text(sentence)
                     score = self.vader.polarity_scores(sentence)
                     if score["compound"] != 0:  # remove all zeroes
                         score["sentence"] = sentence
                         score["datetime"] = date
                         scores.append(score)
             else:
-                sentence = self.normalize_text(item)
+                sentence = self._normalize_text(item)
                 score = self.vader.polarity_scores(sentence)
                 if score["compound"] != 0:  # remove all zeroes
                     score["sentence"] = sentence
@@ -657,7 +744,7 @@ class Elijiah:
         scores = pd.DataFrame(scores)
         return scores
 
-    def analyze_flair_text(self, tweets: pd.DataFrame, section: str):
+    def _analyze_flair_text(self, tweets: pd.DataFrame, section: str):
         """Takes a dataframe of tweets and analyzes and saves the score for each row
         ...
 
@@ -678,7 +765,7 @@ class Elijiah:
         sentiments = []
         newframe = tweets.copy()
         try:
-            newframe[section] = newframe[section].apply(self.normalize_text)
+            newframe[section] = newframe[section].apply(self._normalize_text)
 
             for tweet in tqdm(
                 newframe[section].to_list(),
@@ -711,110 +798,6 @@ class Elijiah:
         newframe = newframe[newframe.probability != "NEUTRAL"]
         newframe = newframe[newframe.sentiment != "NEUTRAL"]
         return newframe
-
-
-class Isaiah:
-    """
-    Performs sentiment analysis on a search term by taking care of gathering
-    all the articles and scoring. Named after the biblical prophet
-
-    ...
-
-    Attributes
-    ----------
-    sia : Elijiah
-        Elijiah analyzer
-    news_source : str
-        where to get the news from (google or newsapi)
-    splitting : bool
-        whether or not to recursively analyze each sentence
-    weights : dict
-        how to weight the title, desc, and text attributes
-        ex: {"title": 0.2, "desc": 0.3, "text": 0.5}
-    loud : bool
-        print unnecessary output (for debugging ususally)
-    bearer_token : str
-        bearer token for the twitter api
-    tqdisable : bool
-        disale progressbars
-
-    Methods
-    -------
-    get_articles
-        gets articles for a single search term
-    twitter_sentiment
-        takes a list of topics and gets the raw scores for each
-        (per topic per text type per row)
-    twitter_summary
-        takes a list of topics and computes the avg scores for each
-    news_summary
-        takes a list of topics and computes the avg scores for each
-    news_sentiment
-        takes a list of topics and gets the raw scores for each
-        (per topic per text type per row)
-    summary
-        takes a list of topics and gets the news and twitter summary
-        avg for each topic
-    news_summary_interval
-        takes a list of topics and gets the NEWS summary over each
-        'period' intervals from oldest to newest
-    twitter_summary_interval
-        takes a list of topics and gets the TWITTER summary over each
-        'period' intervals from oldest to newest
-    summary_interval
-        takes a list of topics and gets the NEWS+TWITTER AVG
-        summary over each 'period' intervals from oldest to newest
-    """
-
-    def __init__(
-        self,
-        news_source="google",
-        newsapi_key=None,
-        bearer_token=None,
-        weights={"title": 0.33, "desc": 0.33, "text": 0.34},
-        loud=False,
-        tqdisable=False,
-    ) -> None:
-        """
-        Parameters
-        ----------
-        news_source : str = "google"
-            where to get the news from
-        newsapi_key : str = None
-            api key to connect to newsapi.org
-        bearer_token : str  = None
-            bearer token for the twitter api
-        spliting : bool = False
-            recursively analyze each sentence or not
-        weights : dict = {"title": 0.33, "desc": 0.33, "text": 0.34}
-            how to weight the title, desc, and text attributes
-        loud : dict = False
-            print unnecessary output (for debugging ususally)
-        tqdisable : bool = False
-            disale progressbars
-        """
-        self.sia = Elijiah(tqdisable=True)
-        if news_source == "newsapi":
-            if newsapi_key:
-                self.news_source = "newsapi"
-                self.newsparser = NewsAPI(newsapi_key=newsapi_key)
-            else:
-                print(
-                    "You requested newsapi but no key was provided. Defaulting to googlenews."
-                )
-                self.news_source = "google"
-                self.newsparser = GoogleNewsParser()
-        else:
-            self.news_source = "google"
-            self.newsparser = GoogleNewsParser()
-        self.weights = weights
-        self.loud = loud
-
-        if bearer_token:
-            self.twitterparser = TwitterParser(bearer_token, tqdisable=True)
-        else:
-            self.twitterparser = TwintParser(tqdisable=True)
-        self.tqdisable = tqdisable
 
     def get_articles(
         self,
@@ -972,13 +955,13 @@ class Isaiah:
         articles = self.get_articles(topics, start_time=start_time, end_time=end_time)
         scores = {}
         for topic in articles:
-            titles = self.sia.analyze_flair_text(
+            titles = self._analyze_flair_text(
                 articles[topic][["title", "datetime"]], "title"
             )
-            desc = self.sia.analyze_flair_text(
+            desc = self._analyze_flair_text(
                 articles[topic][["desc", "datetime"]], "desc"
             )
-            text = self.sia.analyze_flair_text(
+            text = self._analyze_flair_text(
                 articles[topic][["text", "datetime"]], "text"
             )
             scores[topic] = {"title": titles, "desc": desc, "text": text}
@@ -1066,7 +1049,7 @@ class Isaiah:
             tweets = self.twitterparser.get_tweets(
                 topic, pages=int(size / 100), start_time=start_time, end_time=end_time
             )
-            scored_frame = self.sia.analyze_flair_text(tweets, "text")
+            scored_frame = self._analyze_flair_text(tweets, "text")
             scores[topic] = scored_frame
         return scores
 

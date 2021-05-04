@@ -23,11 +23,11 @@ $ pip3 install abraham3k
 The most simple way of use is to use the `_summary` functions.
 
 ```python
-from abraham3k.prophets import Isaiah
+from abraham3k.prophets import Abraham
 
 watched = ["amd", "tesla"]
 
-darthvader = Isaiah(
+darthvader = Abraham(
       news_source="newsapi",
       newsapi_key="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
       bearer_token="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
@@ -61,9 +61,9 @@ print(scores)
 You can run the function `news_sentiment` to get the raw scores for the news. This will return a nested dictionary with keys for each topic.
 
 ```python
-from abraham3k.prophets import Isaiah
+from abraham3k.prophets import Abraham
 
-darthvader = Isaiah(news_source="google") 
+darthvader = Abraham(news_source="google") 
 
 scores = darthvader.news_sentiment(["amd", 
                                "microsoft", 
@@ -91,9 +91,9 @@ print(scores['tesla']['text'])
 The same way works for the twitter API (see below for integrating twitter usage).
 
 ```python
-from abraham3k.prophets import Isaiah
+from abraham3k.prophets import Abraham
 
-darthvader = Isaiah(news_source="google") 
+darthvader = Abraham(news_source="google") 
 
 scores = darthvader.twitter_sentiment(["amd", 
                                     "microsoft", 
@@ -105,9 +105,9 @@ scores = darthvader.twitter_sentiment(["amd",
 You can also just use a one-off function to get the sentiment from both the news and twitter combined.
 
 ```python
-from abraham3k.prophets import Isaiah
+from abraham3k.prophets import Abraham
 
-darthvader = Isaiah(news_source="google") 
+darthvader = Abraham(news_source="google") 
 
 scores = darthvader.summary(["tesla", "amd"], weights={"news": 0.5, "twitter": 0.5})
 
@@ -119,7 +119,7 @@ print(scores)
 
 ## Changing News Sources
 
-`Isaiah` supports two news sources: [Google News](https://news.google.com/) and [NewsAPI](https://newsapi.org/). Default is [Google News](https://news.google.com/), but you can change it to [NewsAPI](https://newsapi.org/) by passing `Isaiah(news_source='newsapi', api_key='<your api key')` when instantiating. I'd highly recommend using [NewsAPI](https://newsapi.org/). It's much better than the [Google News](https://news.google.com/) API. Setup is really simple, just head to the [register](https://newsapi.org/register) page and sign up to get your API key.
+`Abraham` supports two news sources: [Google News](https://news.google.com/) and [NewsAPI](https://newsapi.org/). Default is [Google News](https://news.google.com/), but you can change it to [NewsAPI](https://newsapi.org/) by passing `Abraham(news_source='newsapi', api_key='<your api key')` when instantiating. I'd highly recommend using [NewsAPI](https://newsapi.org/). It's much better than the [Google News](https://news.google.com/) API. Setup is really simple, just head to the [register](https://newsapi.org/register) page and sign up to get your API key.
 
 ## Twitter Functionality
 
