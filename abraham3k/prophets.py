@@ -1159,7 +1159,9 @@ class Isaiah:
         topics,
         oldest=datetime.now() - timedelta(days=1),
         newest=datetime.now(),
-        period=timedelta(hours=1),
+        interval=timedelta(hours=12),
+        offset=timedelta(hours=1),
+        size=100,
     ):
         """Get the NEWS summary over each 'period' intervals from oldest to newest
 
@@ -1171,8 +1173,12 @@ class Isaiah:
             oldest datetime to search from
         newest : datetime.datetime
             newest datetime to search up to
-        period : timedelta
+        interval : timedelta
+            interval to grab the data with
+        offset : timedelta
             interval to advance through with
+        size : int = 100
+            roughly how many articles to get per interval
 
         Returns
         -------
@@ -1186,17 +1192,18 @@ class Isaiah:
             df = pd.DataFrame(columns=["timestamp", "positive", "negative"])
 
             for i in trange(
-                self._intervals(oldest, newest, period),
+                self._intervals(oldest, newest, offset),
                 leave=True,
                 dynamic_ncols=True,
                 desc="backtest",
                 disable=self.tqdisable,
             ):
-                pre = now - period
+                pre = now - offset
 
                 scores = self.news_summary(
                     [topic],
-                    start_time=pre.strftime(TWITTER_TF),
+                    size=size,
+                    start_time=(now - interval).strftime(TWITTER_TF),
                     end_time=now.strftime(TWITTER_TF),
                 )[topic]
 
@@ -1206,7 +1213,7 @@ class Isaiah:
                         "timestamp": now,
                         "positive": scores[0],
                         "negative": scores[1],
-                        "lag": period,
+                        "lag": interval,
                     },
                     ignore_index=True,
                 )
@@ -1220,7 +1227,9 @@ class Isaiah:
         topics,
         oldest=datetime.now() - timedelta(days=1),
         newest=datetime.now(),
-        period=timedelta(hours=1),
+        interval=timedelta(hours=12),
+        offset=timedelta(hours=1),
+        size=100,
     ):
         """Get the TWITTER summary over each 'period' intervals from oldest to newest
 
@@ -1232,8 +1241,12 @@ class Isaiah:
             oldest datetime to search from
         newest : datetime.datetime
             newest datetime to search up to
-        period : timedelta
+        interval : timedelta
+            interval to grab the data with
+        offset : timedelta
             interval to advance through with
+        size : int = 100
+            roughly how many tweets to get per interval
 
         Returns
         -------
@@ -1247,17 +1260,19 @@ class Isaiah:
             df = pd.DataFrame(columns=["timestamp", "positive", "negative"])
 
             for i in trange(
-                self._intervals(oldest, newest, period),
+                self._intervals(oldest, newest, offset),
                 leave=True,
                 dynamic_ncols=True,
                 desc="backtest",
                 disable=self.tqdisable,
             ):
-                pre = now - period
+                pre = now - offset
+                farthest = now - interval
 
                 scores = self.twitter_summary(
                     [topic],
-                    start_time=pre.strftime(TWITTER_TF),
+                    size=size,
+                    start_time=farthest.strftime(TWITTER_TF),
                     end_time=now.strftime(TWITTER_TF),
                 )[topic]
 
@@ -1267,7 +1282,7 @@ class Isaiah:
                         "timestamp": now,
                         "positive": scores[0],
                         "negative": scores[1],
-                        "lag": period,
+                        "lag": interval,
                     },
                     ignore_index=True,
                 )
