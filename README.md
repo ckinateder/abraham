@@ -24,6 +24,7 @@ The most simple way of use is to use the `_summary` functions.
 
 ```python
 from abraham3k.prophets import Abraham
+from datetime import datetime, timedelta
 
 watched = ["amd", "tesla"]
 
@@ -36,8 +37,8 @@ darthvader = Abraham(
 
 scores = darthvader.news_summary(
       watched,
-      start_time="2021-4-20T00:00:00Z" 
-      end_time="2021-4-22T00:00:00Z",
+      start_time=datetime.now() - timedelta(days=1) 
+      end_time=datetime.now(),
 )
 print(scores)
 
@@ -45,11 +46,10 @@ print(scores)
 {'amd': (56.2, 43.8), 'tesla': (40.4, 59.6)} # returns a tuple (positive count : negative count)
 '''
 
-
 scores = darthvader.twitter_summary(
       watched,
-      start_time="2021-4-20T00:00:00Z" 
-      end_time="2021-4-22T00:00:00Z",
+      start_time=datetime.now() - timedelta(days=1) 
+      end_time=datetime.now(),
 )
 print(scores)
 
@@ -62,6 +62,7 @@ You can run the function `news_sentiment` to get the raw scores for the news. Th
 
 ```python
 from abraham3k.prophets import Abraham
+from datetime import datetime, timedelta
 
 darthvader = Abraham(news_source="google") 
 
@@ -92,6 +93,7 @@ The same way works for the twitter API (see below for integrating twitter usage)
 
 ```python
 from abraham3k.prophets import Abraham
+from datetime import datetime, timedelta
 
 darthvader = Abraham(news_source="google") 
 
@@ -106,6 +108,7 @@ You can also just use a one-off function to get the sentiment from both the news
 
 ```python
 from abraham3k.prophets import Abraham
+from datetime import datetime, timedelta
 
 darthvader = Abraham(news_source="google") 
 
@@ -121,9 +124,10 @@ There's also a built-in function for building a dataset of past sentiments. This
 
 ```python
 from abraham3k.prophets import Abraham
+from datetime import datetime, timedelta
 
 # this works best using the offical twitter api rather than twint
-darthvader = Abraham(bearer_token="xxxxxxxxxxxxxxxxxxxxxx") 
+darthvader = Abraham(bearer_token="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx") 
 
 scores = twitter_summary_interval(
         self,

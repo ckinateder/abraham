@@ -76,8 +76,8 @@ class NewsAPI:
         pagesize: int = 100,
         page: int = 1,
         language: str = "en",
-        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
-        end_time=datetime.now().strftime(TWITTER_TF),
+        start_time=(datetime.now() - timedelta(2)),
+        end_time=datetime.now(),
     ):
         """Search the news for a search term.
 
@@ -93,9 +93,9 @@ class NewsAPI:
             page to read from
         language: str = "en", optional
             language to search in
-        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+        start_time : str = (datetime.now() - timedelta(2))
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
-        end_time : str = datetime.now().strftime(TWITTER_TF)
+        end_time : str = datetime.now()
             how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
 
         Returns
@@ -109,8 +109,8 @@ class NewsAPI:
             "apiKey": self.newsapi_key,
             "language": language,
             "page": page,
-            "from": start_time,
-            "to": end_time,
+            "from": start_time.strftime(TWITTER_TF),
+            "to": end_time.strftime(TWITTER_TF),
         }
         response = requests.get(url, params=params)
         json_response = response.json()["articles"]
@@ -163,8 +163,8 @@ class NewsAPI:
     def get_articles(
         self,
         searchfor,
-        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
-        end_time=datetime.now().strftime(TWITTER_TF),
+        start_time=(datetime.now() - timedelta(2)),
+        end_time=datetime.now(),
     ):
         """Gets articles for a single search term
 
@@ -172,7 +172,7 @@ class NewsAPI:
         ----------
         searchfor: str
             term to search for
-        up_to : str = datetime.now().strftime(TWITTER_TF)
+        up_to : str = datetime.now()
             latest date to get news for, in "%Y-%m-%d" format
         window : int = 1
             how many days back to search for
@@ -186,7 +186,9 @@ class NewsAPI:
         cleaned_df = pd.DataFrame()
         try:
             jresponse = self.fetch_json(
-                searchfor, start_time=start_time, end_time=end_time
+                searchfor,
+                start_time=start_time,
+                end_time=end_time,
             )
             cleaned = self.clean_response(jresponse)
             cleaned_df = self.cleaned_to_df(cleaned)
@@ -249,8 +251,8 @@ class GoogleNewsParser:
     def get_articles(
         self,
         search_term,
-        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
-        end_time=datetime.now().strftime(TWITTER_TF),
+        start_time=(datetime.now() - timedelta(2)),
+        end_time=datetime.now(),
     ):
         """Gets articles for a single search term
 
@@ -258,9 +260,9 @@ class GoogleNewsParser:
         ----------
         searchfor: str
             term to search for
-        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+        start_time : str = (datetime.now() - timedelta(2))
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
-        end_time : str = datetime.now().strftime(TWITTER_TF)
+        end_time : str = datetime.now()
             how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
 
         Returns
@@ -271,8 +273,8 @@ class GoogleNewsParser:
         """
         start = time.time()
         # use settimerange instead
-        end_date = datetime.strptime(end_time, TWITTER_TF).strftime(GOOGLENEWS_TF)
-        start_date = datetime.strptime(start_time, TWITTER_TF).strftime(GOOGLENEWS_TF)
+        end_date = end_time.strftime(GOOGLENEWS_TF)
+        start_date = start_time.strftime(GOOGLENEWS_TF)
         self.googlenews.set_time_range(start_date, end_date)
         self.googlenews.get_news(search_term)  # get the news
         results = self.googlenews.results()  # get the results
@@ -357,8 +359,8 @@ class TwitterParser:
         self,
         topic,
         pages=1,
-        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
-        end_time=datetime.now().strftime(TWITTER_TF),
+        start_time=(datetime.now() - timedelta(2)),
+        end_time=datetime.now(),
     ):  # how many days back to go
         """Get the tweets for a given topic
 
@@ -366,9 +368,9 @@ class TwitterParser:
         ----------
         topic : str
             topic to search for
-        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+        start_time : str = (datetime.now() - timedelta(2))
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
-        end_time : str = datetime.now().strftime(TWITTER_TF)
+        end_time : str = datetime.now()
             how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
 
         Returns
@@ -381,8 +383,8 @@ class TwitterParser:
         """
         # define params
         params = {
-            "start_time": start_time,
-            "end_time": end_time,
+            "start_time": start_time.strftime(TWITTER_TF),
+            "end_time": end_time.strftime(TWITTER_TF),
             "query": f"({topic}) (lang:en)",
             "max_results": "100",
             "tweet.fields": "created_at,lang",
@@ -476,8 +478,8 @@ class TwintParser:
         self,
         topic,
         pages=2,
-        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
-        end_time=datetime.now().strftime(TWITTER_TF),
+        start_time=(datetime.now() - timedelta(2)),
+        end_time=datetime.now(),
     ):  # how many days back to go
         """Get the tweets for a given topic
 
@@ -485,9 +487,9 @@ class TwintParser:
         ----------
         topic : str
             topic to search for
-        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+        start_time : str = (datetime.now() - timedelta(2))
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
-        end_time : str = datetime.now().strftime(TWITTER_TF)
+        end_time : str = datetime.now()
             how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
 
         Returns
@@ -503,8 +505,8 @@ class TwintParser:
         tweets = pd.DataFrame()
         self.config.Search = topic
         self.config.Limit = round(pages * 100)  # make sure its an int
-        self.config.Since = datetime.strptime(start_time, TWITTER_TF).strftime(TWINT_TF)
-        self.config.Until = datetime.strptime(end_time, TWITTER_TF).strftime(TWINT_TF)
+        self.config.Since = start_time.strftime(TWINT_TF)
+        self.config.Until = end_time.strftime(TWINT_TF)
 
         try:
             twint.run.Search(self.config)
@@ -802,8 +804,8 @@ class Abraham:
     def get_articles(
         self,
         topics: list,
-        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
-        end_time=datetime.now().strftime(TWITTER_TF),
+        start_time=(datetime.now() - timedelta(2)),
+        end_time=datetime.now(),
     ) -> Dict:
         """Takes a list of topics and returns a dict of topics : pd.dataframe
 
@@ -811,9 +813,9 @@ class Abraham:
         ----------
         topics : list
             list of terms to search for
-        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+        start_time : str = (datetime.now() - timedelta(2))
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
-        end_time : str = datetime.now().strftime(TWITTER_TF)
+        end_time : str = datetime.now()
             how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
 
         Returns
@@ -839,8 +841,8 @@ class Abraham:
     def news_summary(
         self,
         topics: list,
-        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
-        end_time=datetime.now().strftime(TWITTER_TF),
+        start_time=(datetime.now() - timedelta(2)),
+        end_time=datetime.now(),
     ):
         """Gets the summary sentiment for each topic
 
@@ -848,10 +850,10 @@ class Abraham:
         ----------
         topics : list
             list of terms to search for
-        up_to : str = datetime.now().strftime(TWITTER_TF)
-            latest date to get news for
-        window : int = 2
-            how many days back to search for
+        start_time : str = (datetime.now() - timedelta(2))
+            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
+        end_time : str = datetime.now()
+            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
 
         Returns
         -------
@@ -926,8 +928,8 @@ class Abraham:
     def news_sentiment(
         self,
         topics: list,
-        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
-        end_time=datetime.now().strftime(TWITTER_TF),
+        start_time=(datetime.now() - timedelta(2)),
+        end_time=datetime.now(),
     ):
         """Gets the WHOLE sentiment for each topic. No or minimal averaging occurs.
 
@@ -935,9 +937,9 @@ class Abraham:
         ----------
         topics : list
             list of terms to search for
-        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+        start_time : timedelta = (datetime.now() - timedelta(2))
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
-        end_time : str = datetime.now().strftime(TWITTER_TF)
+        end_time : timedelta = datetime.now()
             how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
 
         Returns
@@ -952,7 +954,11 @@ class Abraham:
           0.173  0.827  0.000   -0.5859  Tesla working vehicle ...  2021-04-20T09:31:36Z
         """
 
-        articles = self.get_articles(topics, start_time=start_time, end_time=end_time)
+        articles = self.get_articles(
+            topics,
+            start_time=start_time,
+            end_time=end_time,
+        )
         scores = {}
         for topic in articles:
             titles = self._analyze_flair_text(
@@ -971,8 +977,8 @@ class Abraham:
         self,
         topics: list,
         size: int = 100,
-        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
-        end_time=datetime.now().strftime(TWITTER_TF),
+        start_time=(datetime.now() - timedelta(2)),
+        end_time=datetime.now(),
     ):
         """Gets the summary sentiment for each topic from twitter
 
@@ -980,9 +986,9 @@ class Abraham:
         ----------
         topics : list
             list of terms to search for
-        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+        start_time : timedelta = (datetime.now() - timedelta(2))
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
-        end_time : str = datetime.now().strftime(TWITTER_TF)
+        end_time : timedelta = datetime.now()
             how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
 
         Returns
@@ -993,7 +999,10 @@ class Abraham:
         """
         scores = {}
         raws = self.twitter_sentiment(
-            topics, size=size, start_time=start_time, end_time=end_time
+            topics,
+            size=size,
+            start_time=start_time,
+            end_time=end_time,
         )
         for topic in raws:
             try:
@@ -1023,8 +1032,8 @@ class Abraham:
         self,
         topics: list,
         size=100,
-        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
-        end_time=datetime.now().strftime(TWITTER_TF),
+        start_time=(datetime.now() - timedelta(2)),
+        end_time=datetime.now(),
     ):
         """Gets the WHOLE sentiment for each topic from twitter. No or minimal averaging occurs.
 
@@ -1034,9 +1043,9 @@ class Abraham:
             list of terms to search for
         size : int = 100
             roughly how many tweets to get
-        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+        start_time : timedelta = (datetime.now() - timedelta(2))
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
-        end_time : str = datetime.now().strftime(TWITTER_TF)
+        end_time : timedelta = datetime.now()
             how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
 
         Returns
@@ -1047,7 +1056,10 @@ class Abraham:
         scores = {}
         for topic in topics:
             tweets = self.twitterparser.get_tweets(
-                topic, pages=int(size / 100), start_time=start_time, end_time=end_time
+                topic,
+                pages=int(size / 100),
+                start_time=start_time,
+                end_time=end_time,
             )
             scored_frame = self._analyze_flair_text(tweets, "text")
             scores[topic] = scored_frame
@@ -1056,8 +1068,8 @@ class Abraham:
     def summary(
         self,
         topics: list,
-        start_time=(datetime.now() - timedelta(2)).strftime(TWITTER_TF),
-        end_time=datetime.now().strftime(TWITTER_TF),
+        start_time=(datetime.now() - timedelta(2)),
+        end_time=datetime.now(),
         weights={"news": 0.5, "twitter": 0.5},
     ):
         """Gets the WHOLE sentiment from news and twitter for each topic.
@@ -1066,9 +1078,9 @@ class Abraham:
         ----------
         topics : list
             list of terms to search for
-        start_time : str = (datetime.now() - timedelta(2)).strftime(TWITTER_TF)
+        start_time : str = (datetime.now() - timedelta(2))
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
-        end_time : str = datetime.now().strftime(TWITTER_TF)
+        end_time : str = datetime.now()
             how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
         weights : dict = {"news": 0.5, "twitter": 0.5}
             how to weight the news results to the twitter results
@@ -1079,10 +1091,14 @@ class Abraham:
             a dict of dataframe of scores for each topic
         """
         twitter = self.twitter_summary(
-            topics=topics, start_time=start_time, end_time=end_time
+            topics=topics,
+            start_time=start_time,
+            end_time=end_time,
         )
         news = self.news_summary(
-            topics=topics, start_time=start_time, end_time=end_time
+            topics=topics,
+            start_time=start_time,
+            end_time=end_time,
         )
         total = {}
         for topic in twitter:
@@ -1186,8 +1202,8 @@ class Abraham:
                 scores = self.news_summary(
                     [topic],
                     size=size,
-                    start_time=(now - interval).strftime(TWITTER_TF),
-                    end_time=now.strftime(TWITTER_TF),
+                    start_time=now - interval,
+                    end_time=now,
                 )[topic]
 
                 # add to dataframe
@@ -1255,8 +1271,8 @@ class Abraham:
                 scores = self.twitter_summary(
                     [topic],
                     size=size,
-                    start_time=farthest.strftime(TWITTER_TF),
-                    end_time=now.strftime(TWITTER_TF),
+                    start_time=farthest,
+                    end_time=now,
                 )[topic]
 
                 # add to dataframe
@@ -1279,7 +1295,8 @@ class Abraham:
         topics,
         oldest=datetime.now() - timedelta(days=1),
         newest=datetime.now(),
-        period=timedelta(hours=1),
+        interval=timedelta(hours=12),
+        offset=timedelta(hours=1),
     ):
         """Get the TOTAL summary (twitter/newsapi) over each 'period' intervals from oldest to newest
 
@@ -1291,7 +1308,9 @@ class Abraham:
             oldest datetime to search from
         newest : datetime.datetime
             newest datetime to search up to
-        period : timedelta
+        interval : timedelta
+            interval to grab the data with
+        offset : timedelta
             interval to advance through with
 
         Returns
@@ -1299,6 +1318,7 @@ class Abraham:
         results : dict
             a dictionary of results in form `topic : results dataframe`
         """
+
         results = {}
 
         for topic in topics:
@@ -1306,18 +1326,19 @@ class Abraham:
             df = pd.DataFrame(columns=["timestamp", "positive", "negative"])
 
             for i in trange(
-                self._intervals(oldest, newest, period),
+                self._intervals(oldest, newest, offset),
                 leave=True,
                 dynamic_ncols=True,
                 desc="backtest",
                 disable=self.tqdisable,
             ):
-                pre = now - period
+                pre = now - offset
+                farthest = now - interval
 
                 scores = self.summary(
                     [topic],
-                    start_time=pre.strftime(TWITTER_TF),
-                    end_time=now.strftime(TWITTER_TF),
+                    start_time=farthest,
+                    end_time=now,
                 )[topic]
 
                 # add to dataframe
@@ -1326,7 +1347,7 @@ class Abraham:
                         "timestamp": now,
                         "positive": scores[0],
                         "negative": scores[1],
-                        "lag": period,
+                        "lag": interval,
                     },
                     ignore_index=True,
                 )
