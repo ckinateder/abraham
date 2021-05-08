@@ -117,6 +117,54 @@ print(scores)
 '''
 ```
 
+There's also a built-in function for building a dataset of past sentiments. This follows the same format as the non-interval functions (`twitter_summary_interval`, `news_summary_interval`, `summary_interval`).
+
+```python
+from abraham3k.prophets import Abraham
+
+# this works best using the offical twitter api rather than twint
+darthvader = Abraham(bearer_token="xxxxxxxxxxxxxxxxxxxxxx") 
+
+scores = twitter_summary_interval(
+        self,
+        ["tesla", "amd"],
+        oldest=datetime.now() - timedelta(days=1),
+        newest=datetime.now(),
+        interval=timedelta(hours=12),
+        offset=timedelta(hours=1),
+        size=100,
+    )
+
+'''
+                    timestamp  positive  negative             lag
+0  2021-05-08 11:46:57.033549      61.0      39.0 0 days 12:00:00
+1  2021-05-08 10:46:57.033549      54.0      46.0 0 days 12:00:00
+2  2021-05-08 09:46:57.033549      68.0      32.0 0 days 12:00:00
+3  2021-05-08 08:46:57.033549      78.0      22.0 0 days 12:00:00
+4  2021-05-08 07:46:57.033549      71.0      29.0 0 days 12:00:00
+5  2021-05-08 06:46:57.033549      74.0      26.0 0 days 12:00:00
+6  2021-05-08 05:46:57.033549      63.0      37.0 0 days 12:00:00
+7  2021-05-08 04:46:57.033549      74.0      26.0 0 days 12:00:00
+8  2021-05-08 03:46:57.033549      53.5      46.5 0 days 12:00:00
+9  2021-05-08 02:46:57.033549      51.0      49.0 0 days 12:00:00
+10 2021-05-08 01:46:57.033549      61.0      39.0 0 days 12:00:00
+11 2021-05-08 00:46:57.033549      46.9      53.1 0 days 12:00:00
+12 2021-05-07 23:46:57.033549      54.0      46.0 0 days 12:00:00
+13 2021-05-07 22:46:57.033549      52.0      48.0 0 days 12:00:00
+14 2021-05-07 21:46:57.033549      58.0      42.0 0 days 12:00:00
+15 2021-05-07 20:46:57.033549      46.0      54.0 0 days 12:00:00
+16 2021-05-07 19:46:57.033549      40.0      60.0 0 days 12:00:00
+17 2021-05-07 18:46:57.033549      40.0      60.0 0 days 12:00:00
+18 2021-05-07 17:46:57.033549      51.0      49.0 0 days 12:00:00
+19 2021-05-07 16:46:57.033549      21.0      79.0 0 days 12:00:00
+20 2021-05-07 15:46:57.033549      52.5      47.5 0 days 12:00:00
+21 2021-05-07 14:46:57.033549      36.0      64.0 0 days 12:00:00
+22 2021-05-07 13:46:57.033549      42.0      58.0 0 days 12:00:00
+23 2021-05-07 12:46:57.033549      40.0      60.0 0 days 12:00:00
+24 2021-05-07 11:46:57.033549      32.0      68.0 0 days 12:00:00
+'''
+```
+
 ## Changing News Sources
 
 `Abraham` supports two news sources: [Google News](https://news.google.com/) and [NewsAPI](https://newsapi.org/). Default is [Google News](https://news.google.com/), but you can change it to [NewsAPI](https://newsapi.org/) by passing `Abraham(news_source='newsapi', api_key='<your api key')` when instantiating. I'd highly recommend using [NewsAPI](https://newsapi.org/). It's much better than the [Google News](https://news.google.com/) API. Setup is really simple, just head to the [register](https://newsapi.org/register) page and sign up to get your API key.
