@@ -3,18 +3,18 @@ from nltk.sentiment.vader import SentimentIntensityAnalyzer
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import sent_tokenize
-import nltk
 from GoogleNews import GoogleNews
 from newspaper import Article, ArticleException
 from tqdm import tqdm, trange
 from threading import Thread
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 import re
 import pandas as pd
 import time, requests
 import warnings
-import sys, logging
+import logging
 import twint
+from finvizfinance.quote import finvizfinance
 
 from dateutil.parser._parser import UnknownTimezoneWarning
 import flair
@@ -43,6 +43,8 @@ class NewsAPI:
     ----------
     newsapi_key : str
         api key to connect to newsapi.org
+    tqdisable : bool
+        disale progressbars
 
     Methods
     -------
@@ -76,7 +78,7 @@ class NewsAPI:
         pagesize: int = 100,
         page: int = 1,
         language: str = "en",
-        start_time=(datetime.now() - timedelta(2)),
+        start_time=(datetime.now() - timedelta(days=2)),
         end_time=datetime.now(),
     ):
         """Search the news for a search term.
@@ -93,7 +95,7 @@ class NewsAPI:
             page to read from
         language: str = "en", optional
             language to search in
-        start_time : str = (datetime.now() - timedelta(2))
+        start_time : str = (datetime.now() - timedelta(days=2))
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
         end_time : str = datetime.now()
             how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
@@ -163,7 +165,7 @@ class NewsAPI:
     def get_articles(
         self,
         searchfor,
-        start_time=(datetime.now() - timedelta(2)),
+        start_time=(datetime.now() - timedelta(days=2)),
         end_time=datetime.now(),
     ):
         """Gets articles for a single search term
@@ -205,7 +207,8 @@ class GoogleNewsParser:
 
     Attributes
     ----------
-    None
+    tqdisable : bool
+        disale progressbars
 
     Methods
     -------
@@ -215,7 +218,8 @@ class GoogleNewsParser:
         Gets articles for a single search term
     """
 
-    def __init__(self) -> None:
+    def __init__(self, tqdisable=True) -> None:
+        self.tqdisable = tqdisable
         self.googlenews = GoogleNews()  # create news object
 
     def _get_text(self, inst):
@@ -251,7 +255,7 @@ class GoogleNewsParser:
     def get_articles(
         self,
         search_term,
-        start_time=(datetime.now() - timedelta(2)),
+        start_time=(datetime.now() - timedelta(days=2)),
         end_time=datetime.now(),
     ):
         """Gets articles for a single search term
@@ -260,7 +264,7 @@ class GoogleNewsParser:
         ----------
         searchfor: str
             term to search for
-        start_time : str = (datetime.now() - timedelta(2))
+        start_time : str = (datetime.now() - timedelta(days=2))
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
         end_time : str = datetime.now()
             how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
@@ -308,6 +312,117 @@ class GoogleNewsParser:
         return pd.DataFrame(results)
 
 
+class FinvizParser:
+    """
+    A class used to fetch news from finviz
+
+    ...
+
+    Attributes
+    ----------
+    tqdisable : bool
+        disale progressbars
+
+    Methods
+    -------
+    _get_text(inst)
+        gets the text for each article it recieves
+    get_articles
+        Gets articles for a single search term
+    """
+
+    def __init__(self, tqdisable=True) -> None:
+        self.tqdisable = tqdisable
+
+    def _get_text(self, inst):
+        """Gets text from an article url (inst["link"])
+
+        Parameters
+        ----------
+        inst : dict
+            dictionary containing the link
+
+        Returns
+        -------
+        str
+            the article
+        """
+        try:
+            article = Article(
+                "http://"
+                + inst["link"]
+                .replace("http://", "")
+                .replace("https://", "")  # remove https that already exists
+            )
+            article.download()
+            article.parse()
+            text = article.text.strip().replace("\n", " ")
+            inst["text"] = text
+
+        except ArticleException:
+            inst["text"] = ""
+        self.pbar.update(1)
+        return inst["text"]
+
+    def get_articles(
+        self,
+        search_term,
+        start_time=(datetime.now() - timedelta(days=2)),
+        end_time=datetime.now(),
+    ):
+        """Gets articles for a single search term
+
+        Parameters
+        ----------
+        searchfor: str
+            term to search for
+        start_time : str = (datetime.now() - timedelta(days=2))
+            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
+        end_time : str = datetime.now()
+            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
+
+        Returns
+        -------
+        pandas.DataFrame
+            a dataframe of the results with columns ['title', 'author', 'source', 'desc',
+                                                    'text', 'datetime', 'url', 'urlToImage']
+        """
+
+        # use settimerange instead
+        results = finvizfinance(search_term).TickerNews()
+        results.rename(
+            columns={"Date": "datetime", "Link": "link", "Title": "title"}, inplace=True
+        )
+        self.pbar = tqdm(
+            total=len(results),
+            unit="article",
+            desc=search_term,
+            leave=False,
+            disable=self.tqdisable,
+        )
+        results = results.to_dict(orient="records")  # convert to dict
+
+        processes = []  # multi thread the execution
+        for i in results:
+            processes.append(
+                Thread(
+                    target=self._get_text,
+                    args=(i,),
+                )
+            )
+
+        # start
+        for proc in processes:
+            proc.start()
+        # join
+        for proc in processes:
+            proc.join()
+        self.pbar.close()
+        results = pd.DataFrame(results)
+        results.rename(columns={"link": "url"}, inplace=True)
+        return results
+
+
 class TwitterParser:
     """
     Gets tweets for analyzing
@@ -318,6 +433,8 @@ class TwitterParser:
     ----------
     bearer_token : str
         twitter api bearer token
+    tqdisable : bool
+        disale progressbars
 
     Methods
     -------
@@ -359,7 +476,7 @@ class TwitterParser:
         self,
         topic,
         pages=1,
-        start_time=(datetime.now() - timedelta(2)),
+        start_time=(datetime.now() - timedelta(days=2)),
         end_time=datetime.now(),
     ):  # how many days back to go
         """Get the tweets for a given topic
@@ -368,7 +485,7 @@ class TwitterParser:
         ----------
         topic : str
             topic to search for
-        start_time : str = (datetime.now() - timedelta(2))
+        start_time : str = (datetime.now() - timedelta(days=2))
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
         end_time : str = datetime.now()
             how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
@@ -434,6 +551,8 @@ class TwintParser:
     ----------
     bearer_token : str
         twitter api bearer token
+    tqdisable : bool
+        disale progressbars
 
     Methods
     -------
@@ -478,7 +597,7 @@ class TwintParser:
         self,
         topic,
         pages=2,
-        start_time=(datetime.now() - timedelta(2)),
+        start_time=(datetime.now() - timedelta(days=2)),
         end_time=datetime.now(),
     ):  # how many days back to go
         """Get the tweets for a given topic
@@ -487,7 +606,7 @@ class TwintParser:
         ----------
         topic : str
             topic to search for
-        start_time : str = (datetime.now() - timedelta(2))
+        start_time : str = (datetime.now() - timedelta(days=2))
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
         end_time : str = datetime.now()
             how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
@@ -555,8 +674,6 @@ class Abraham:
     _analyze_news_text(frame, section, recursive)
         takes a dataframe and a section and scores each row. if recursive=True, it will only
         analyze one sentence at time
-    get_articles
-        gets articles for a single search term
     twitter_sentiment
         takes a list of topics and gets the raw scores for each
         (per topic per text type per row)
@@ -622,6 +739,7 @@ class Abraham:
         else:
             self.news_source = "google"
             self.newsparser = GoogleNewsParser()
+
         self.weights = weights
         self.loud = loud
 
@@ -630,6 +748,7 @@ class Abraham:
         else:
             self.twitterparser = TwintParser(tqdisable=True)
 
+        self.finvizparser = FinvizParser()
         # sentiment analysis directly
         self.vader = SentimentIntensityAnalyzer()
         self.lemmatizer = WordNetLemmatizer()
@@ -801,47 +920,10 @@ class Abraham:
         newframe = newframe[newframe.sentiment != "NEUTRAL"]
         return newframe
 
-    def get_articles(
-        self,
-        topics: list,
-        start_time=(datetime.now() - timedelta(2)),
-        end_time=datetime.now(),
-    ) -> Dict:
-        """Takes a list of topics and returns a dict of topics : pd.dataframe
-
-        Parameters
-        ----------
-        topics : list
-            list of terms to search for
-        start_time : str = (datetime.now() - timedelta(2))
-            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
-        end_time : str = datetime.now()
-            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
-
-        Returns
-        -------
-        dict
-            in format {topic: <pd.DataFrame>, topic: <pd.DataFrame>, ... } with
-            dataframe being of the results with columns ['title', 'author',
-                'source', 'desc', 'text', 'datetime', 'url', 'urlToImage']
-            ex:
-            {
-                'coinbase': <pd.DataFrame>,
-                'bitcoin': <pd.DataFrame>,
-                ...
-            }
-        """
-        topic_results = {}
-        for topic in topics:
-            topic_results[topic] = self.newsparser.get_articles(
-                topic, start_time=start_time, end_time=end_time
-            )
-        return topic_results
-
     def news_summary(
         self,
         topics: list,
-        start_time=(datetime.now() - timedelta(2)),
+        start_time=(datetime.now() - timedelta(days=2)),
         end_time=datetime.now(),
     ):
         """Gets the summary sentiment for each topic
@@ -850,7 +932,7 @@ class Abraham:
         ----------
         topics : list
             list of terms to search for
-        start_time : str = (datetime.now() - timedelta(2))
+        start_time : str = (datetime.now() - timedelta(days=2))
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
         end_time : str = datetime.now()
             how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
@@ -928,7 +1010,7 @@ class Abraham:
     def news_sentiment(
         self,
         topics: list,
-        start_time=(datetime.now() - timedelta(2)),
+        start_time=(datetime.now() - timedelta(days=2)),
         end_time=datetime.now(),
     ):
         """Gets the WHOLE sentiment for each topic. No or minimal averaging occurs.
@@ -937,7 +1019,7 @@ class Abraham:
         ----------
         topics : list
             list of terms to search for
-        start_time : timedelta = (datetime.now() - timedelta(2))
+        start_time : timedelta = (datetime.now() - timedelta(days=2))
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
         end_time : timedelta = datetime.now()
             how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
@@ -954,11 +1036,11 @@ class Abraham:
           0.173  0.827  0.000   -0.5859  Tesla working vehicle ...  2021-04-20T09:31:36Z
         """
 
-        articles = self.get_articles(
-            topics,
-            start_time=start_time,
-            end_time=end_time,
-        )
+        articles = {}
+        for topic in topics:
+            articles[topic] = self.newsparser.get_articles(
+                topic, start_time=start_time, end_time=end_time
+            )
         scores = {}
         for topic in articles:
             titles = self._analyze_flair_text(
@@ -977,7 +1059,7 @@ class Abraham:
         self,
         topics: list,
         size: int = 100,
-        start_time=(datetime.now() - timedelta(2)),
+        start_time=(datetime.now() - timedelta(days=2)),
         end_time=datetime.now(),
     ):
         """Gets the summary sentiment for each topic from twitter
@@ -986,7 +1068,7 @@ class Abraham:
         ----------
         topics : list
             list of terms to search for
-        start_time : timedelta = (datetime.now() - timedelta(2))
+        start_time : timedelta = (datetime.now() - timedelta(days=2))
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
         end_time : timedelta = datetime.now()
             how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
@@ -1032,7 +1114,7 @@ class Abraham:
         self,
         topics: list,
         size=100,
-        start_time=(datetime.now() - timedelta(2)),
+        start_time=(datetime.now() - timedelta(days=2)),
         end_time=datetime.now(),
     ):
         """Gets the WHOLE sentiment for each topic from twitter. No or minimal averaging occurs.
@@ -1043,7 +1125,7 @@ class Abraham:
             list of terms to search for
         size : int = 100
             roughly how many tweets to get
-        start_time : timedelta = (datetime.now() - timedelta(2))
+        start_time : timedelta = (datetime.now() - timedelta(days=2))
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
         end_time : timedelta = datetime.now()
             how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
@@ -1068,7 +1150,7 @@ class Abraham:
     def summary(
         self,
         topics: list,
-        start_time=(datetime.now() - timedelta(2)),
+        start_time=(datetime.now() - timedelta(days=2)),
         end_time=datetime.now(),
         weights={"news": 0.5, "twitter": 0.5},
     ):
@@ -1078,7 +1160,7 @@ class Abraham:
         ----------
         topics : list
             list of terms to search for
-        start_time : str = (datetime.now() - timedelta(2))
+        start_time : str = (datetime.now() - timedelta(days=2))
             how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
         end_time : str = datetime.now()
             how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
