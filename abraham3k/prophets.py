@@ -33,7 +33,7 @@ NEWSAPI_URL = "https://newsapi.org/v2/everything?"
 TWITTER_URL = "https://api.twitter.com/2/tweets/search/recent"
 
 
-class NewsAPI:
+class NewsAPIParser:
     """
     A class used to fetch news from newsapi.org
 
@@ -729,7 +729,7 @@ class Abraham:
         if news_source == "newsapi":
             if newsapi_key:
                 self.news_source = "newsapi"
-                self.newsparser = NewsAPI(newsapi_key=newsapi_key)
+                self.newsparser = NewsAPIParser(newsapi_key=newsapi_key)
             else:
                 print(
                     "You requested newsapi but no key was provided. Defaulting to googlenews."

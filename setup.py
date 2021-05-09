@@ -29,6 +29,6 @@ setuptools.setup(
         "pandas>=1.2.3",
         "tqdm>=4.58.0",
         "flair>=0.8.0.post1",
-        "twint>=2.1.21",
+        "twint>=2.1.20",
     ],
 )
