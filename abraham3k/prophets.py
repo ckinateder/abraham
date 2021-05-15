@@ -15,6 +15,7 @@ import warnings
 import logging
 import twint
 from finvizfinance.quote import finvizfinance
+from pytrends.request import TrendReq
 
 from dateutil.parser._parser import UnknownTimezoneWarning
 import flair
@@ -25,9 +26,9 @@ warnings.simplefilter("ignore", UnknownTimezoneWarning)
 
 # define time formats for each
 GOOGLENEWS_TF = "%m/%d/%Y"
-# TWITTER_TF = "%Y-%m-%d"
-TWITTER_TF = "%Y-%m-%dT%H:%M:%SZ"
-TWINT_TF = "%Y-%m-%d %H:%M:%S"
+TRENDS_TF = "%Y-%m-%d"  # google trends
+TWITTER_TF = "%Y-%m-%dT%H:%M:%SZ"  # twitter api
+TWINT_TF = "%Y-%m-%d %H:%M:%S"  # twint api
 
 NEWSAPI_URL = "https://newsapi.org/v2/everything?"
 TWITTER_URL = "https://api.twitter.com/2/tweets/search/recent"
@@ -95,10 +96,10 @@ class NewsAPIParser:
             page to read from
         language: str = "en", optional
             language to search in
-        start_time : str = (datetime.now() - timedelta(days=2))
-            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
-        end_time : str = datetime.now()
-            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
+        start_time : timedelta = (datetime.now() - timedelta(days=2))
+            how far back to search from
+        end_time : timedelta = datetime.now()
+            how recent to search from
 
         Returns
         -------
@@ -264,10 +265,10 @@ class GoogleNewsParser:
         ----------
         searchfor: str
             term to search for
-        start_time : str = (datetime.now() - timedelta(days=2))
-            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
-        end_time : str = datetime.now()
-            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
+        start_time : timedelta = (datetime.now() - timedelta(days=2))
+            how far back to search from
+        end_time : timedelta = datetime.now()
+            how recent to search from
 
         Returns
         -------
@@ -376,10 +377,10 @@ class FinvizParser:
         ----------
         searchfor: str
             term to search for
-        start_time : str = (datetime.now() - timedelta(days=2))
-            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
-        end_time : str = datetime.now()
-            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
+        start_time : timedelta = (datetime.now() - timedelta(days=2))
+            how far back to search from
+        end_time : timedelta = datetime.now()
+            how recent to search from
 
         Returns
         -------
@@ -485,10 +486,10 @@ class TwitterParser:
         ----------
         topic : str
             topic to search for
-        start_time : str = (datetime.now() - timedelta(days=2))
-            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
-        end_time : str = datetime.now()
-            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
+        start_time : timedelta = (datetime.now() - timedelta(days=2))
+            how far back to search from
+        end_time : timedelta = datetime.now()
+            how recent to search from
 
         Returns
         -------
@@ -607,9 +608,9 @@ class TwintParser:
         topic : str
             topic to search for
         start_time : str = (datetime.now() - timedelta(days=2))
-            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
+            how far back to search from
         end_time : str = datetime.now()
-            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
+            how recent to search from
 
         Returns
         -------
@@ -636,6 +637,78 @@ class TwintParser:
         return tweets
 
 
+class TrendParser:
+    """
+    Interfaces with the google trends api
+
+    Attributes
+    ----------
+    trend : TrendReq
+        the trends object
+
+    Methods
+    -------
+        get_trends(topic)
+    """
+
+    def __init__(self, lang="en-US") -> None:
+        """
+        Parameters
+        ----------
+        lang : str = 'en-US'
+            language to search in
+        """
+
+        self.pytrends = TrendReq(hl=lang, tz=360)
+
+    def interest_over_time(
+        self,
+        topics_list,
+        start_time=(datetime.now() - timedelta(days=2)),
+        end_time=datetime.now(),
+        geo="",
+        cat=0,
+    ):
+        """Get the past trends for a topic
+
+        "Numbers represent search interest relative to the highest point on the
+        chart for the given region and time. A value of 100 is the peak
+        popularity for the term. A value of 50 means that the term is half as
+        popular. A score of 0 means there was not enough data for this term."
+
+        Parameters
+        ----------
+        topics_list : list(str)
+            list of topics to search for
+        start_time : timedelta = (datetime.now() - timedelta(days=2))
+            how far back to search from
+        end_time : timedelta = datetime.now()
+            how recent to search from
+        geo : str = ""
+            where in the world to search from (eg us, world, etc)
+        cat : int = 0
+            category to narrow results
+            (see https://github.com/pat310/google-trends-api/wiki/Google-Trends-Categories)
+
+        Returns
+        -------
+        results : pd.DataFrame
+            dataframe of results
+        """
+        try:
+            timeframe = (
+                start_time.strftime(TRENDS_TF) + " " + end_time.strftime(TRENDS_TF)
+            )
+            self.pytrends.build_payload(
+                topics_list, cat=cat, timeframe=timeframe, geo=geo, gprop=""
+            )
+            results = self.pytrends.interest_over_time()
+            return results
+        except Exception as e:
+            warnings.warn(f"Couldn't get trends ({e})")
+            return pd.DataFrame
+
+
 class Abraham:
     """
     Performs sentiment analysis on a search term by taking care of gathering
@@ -651,6 +724,12 @@ class Abraham:
         flair model for the tweets
     lemmatizer : WordNetLemmatizer
         lemmatizer from nltk
+    trendparser : TrendParser
+        trend parser
+    twitterparser
+        twitter parser
+    newparser
+        news parser
     news_source : str
         where to get the news from (google or newsapi)
     splitting : bool
@@ -696,6 +775,8 @@ class Abraham:
     summary_interval
         takes a list of topics and gets the NEWS+TWITTER AVG
         summary over each 'period' intervals from oldest to newest
+    interest_interval
+        gets the google trends ratio between a list of terms
     """
 
     def __init__(
@@ -749,6 +830,7 @@ class Abraham:
             self.twitterparser = TwintParser(tqdisable=True)
 
         self.finvizparser = FinvizParser()
+        self.trendparser = TrendParser()
         # sentiment analysis directly
         self.vader = SentimentIntensityAnalyzer()
         self.lemmatizer = WordNetLemmatizer()
@@ -1160,10 +1242,10 @@ class Abraham:
         ----------
         topics : list
             list of terms to search for
-        start_time : str = (datetime.now() - timedelta(days=2))
-            how far back to search from in time format %Y-%m-%dT%H:%M:%SZ'
-        end_time : str = datetime.now()
-            how recent to search from in time format %Y-%m-%dT%H:%M:%SZ'
+        start_time : timedelta = (datetime.now() - timedelta(days=2))
+            how far back to search from
+        end_time : timedelta = datetime.now()
+            how recent to search from
         weights : dict = {"news": 0.5, "twitter": 0.5}
             how to weight the news results to the twitter results
 
@@ -1436,4 +1518,36 @@ class Abraham:
                 # move back
                 now = pre
             results[topic] = df
+        return results
+
+    def interest_interval(
+        self,
+        topics_list,
+        start_time=(datetime.now() - timedelta(days=365)),
+        end_time=datetime.now(),
+    ):
+        """Get the past trends for a topic
+
+        "Numbers represent search interest relative to the highest point on the
+        chart for the given region and time. A value of 100 is the peak
+        popularity for the term. A value of 50 means that the term is half as
+        popular. A score of 0 means there was not enough data for this term."
+
+        Parameters
+        ----------
+        topics_list : list(str)
+            list of topics to search for
+        start_time : timedelta = (datetime.now() - timedelta(days=365))
+            how far back to search from
+        end_time : timedelta = datetime.now()
+            how recent to search from
+
+        Returns
+        -------
+        results : pd.DataFrame
+            dataframe of results
+        """
+        results = self.trendparser.interest_over_time(
+            topics_list, start_time=start_time, end_time=end_time, geo="", cat=0
+        ).drop("isPartial", axis=1)
         return results

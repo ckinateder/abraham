@@ -115,6 +115,7 @@ darthvader = Abraham(news_source="google")
 scores = darthvader.summary(["tesla", "amd"], weights={"news": 0.5, "twitter": 0.5})
 
 print(scores)
+
 '''
 {'amd': (59.0, 41.0), 'tesla': (46.1, 53.9)}
 '''
@@ -138,6 +139,8 @@ scores = twitter_summary_interval(
         offset=timedelta(hours=1),
         size=100,
     )
+
+print(scores)
 
 '''
                     timestamp  positive  negative             lag
@@ -168,6 +171,40 @@ scores = twitter_summary_interval(
 24 2021-05-07 11:46:57.033549      32.0      68.0 0 days 12:00:00
 '''
 ```
+
+Google trends is also in the process of being added. Currently, there's support for interest over time. You can access it like this.
+
+```python
+from abraham3k.prophets import Abraham
+from datetime import datetime, timedelta
+
+darthvader = Abraham()
+
+results = darthvader.interest_interval(
+        ["BTC USD", "buy bitcoin"],
+        start_time=(datetime.now() - timedelta(days=52)),
+        end_time=datetime.now())
+
+print(results)
+
+'''
+            BTC USD  buy bitcoin
+date                            
+2021-03-24       62           18
+2021-03-25       68           16
+2021-03-26       58           12
+2021-03-27       47           15
+2021-03-28       48           15
+...
+2021-05-08       48           27
+2021-05-09       38           25
+2021-05-10       43           20
+2021-05-11       44           24
+2021-05-12       38           20
+'''
+```
+
+Numbers represent search interest relative to the highest point on the chart for the given region and time. A value of 100 is the peak popularity for the term. A value of 50 means that the term is half as popular. A score of 0 means there was not enough data for this term.
 
 ## Changing News Sources
 
