@@ -1060,7 +1060,7 @@ class Abraham:
             )
 
             # apply weights here
-            total = (
+            sentiment = (
                 round(
                     title[0]
                     * self.weights["title"]
@@ -1086,7 +1086,9 @@ class Abraham:
                     1,
                 ),
             )
-            scores[topic] = total
+            scores[topic] = tuple(
+                [round(r * (100 / sum(sentiment)), 2) for r in sentiment]
+            )
         return scores
 
     def news_sentiment(
@@ -1170,7 +1172,7 @@ class Abraham:
         )
         for topic in raws:
             try:
-                scores[topic] = (
+                sentiment = (
                     round(
                         raws[topic]
                         .loc[raws[topic]["sentiment"] == "POSITIVE"]
@@ -1187,6 +1189,10 @@ class Abraham:
                         * (100 / raws[topic].shape[0]),
                         1,
                     ),
+                )
+
+                scores[topic] = tuple(
+                    [round(r * (100 / sum(sentiment)), 2) for r in sentiment]
                 )
             except:
                 scores[topic] = (-1, -1)
@@ -1267,7 +1273,7 @@ class Abraham:
         total = {}
         for topic in twitter:
             try:
-                total[topic] = (
+                sentiment = (
                     round(
                         (
                             twitter[topic][0] * weights["twitter"]
@@ -1283,8 +1289,10 @@ class Abraham:
                         1,
                     ),
                 )
+                total[topic] = tuple([r * (100 / sum(sentiment)) for r in sentiment])
             except Exception as e:
                 warnings.warn(f"Error getting total for {topic} ({e})")
+                total[topic] = (-1, -1)
         return total
 
         ## now for time travel
